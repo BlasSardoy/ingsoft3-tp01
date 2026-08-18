@@ -1,0 +1,63 @@
+services:
+  # ---------------------------------------------------------------------------
+  # BASE DE DATOS
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+
+    environment:
+      # La contraseña NO está escrita acá: entra por el .env, que no se
+      # commitea. Lo único versionado es .env.example, sin secretos reales.
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # Crea la base "app" al inicializarse. Sin esto el backend fallaría con
+      # "database app does not exist".
+      POSTGRES_DB: app
+
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # BACKEND (API Express)
+  # ---------------------------------------------------------------------------
+  backend:
+    build: ./backend # construye con backend/Dockerfile
+
+    environment:
+
+      DATABASE_URL: "postgres://postgres:${DB_PASSWORD}@db:5432/app"
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PORT: 8080
+
+    ports:
+      # Publicado para poder probar la API directo con curl o Postman.
+      # El navegador NO entra por acá: entra por el 3000 y nginx hace el proxy.
+      - "8080:8080"
+
+    depends_on:
+      db:
+        # Espera al healthcheck de arriba, no sólo a que el contenedor exista.
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # FRONTEND (SPA compilada, servida por nginx)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build: ./frontend
+
+    ports:
+      # 3000 en tu máquina → 80 dentro del contenedor (donde escucha nginx).
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

@@ -1,4 +1,4 @@
-Decisiones — TP1
+## Decisiones — TP1
 --------------------------------------------
 1. Por qué Git no pudo resolver el conflicto solo — y qué habría tenido que pasar para que nunca apareciera.
 
@@ -20,3 +20,73 @@ Lo resolví separando en dos líneas.
 3. Declaración de uso de IA
 
 Usé Claude para facilitarme la instalación y configuración de entorno. Interpretar mensajes de error de la terminal y para redactar la primera versión de este archivo y de evidencias.md a partir de mis propias capturas.
+
+--------------------------------------------
+
+# Decisiones TP2
+--------------------------------------------
+## Qué app elegiste y por qué (contra los criterios de la guía).
+
+**GameRate** es un catálogo de videojuegos con reseñas: los usuarios buscan juegos, califican la
+jugabilidad de 1 a 5 y dejan un comentario, y un administrador mantiene el catálogo (altas y bajas
+de juegos, moderación de reseñas ajenas).
+
+Contra los 4 criterios de la guía (§3.3):
+
+¿Buildea y corre localmente hoy, sin magia? Sí. `docker compose up -d --build` levanta los 3 servicios desde cero, sin ningún paso manual salvo copiar el `.env`. Lo probé antes de comprometerme y lo sigo probando en cada entrega.
+
+¿Tiene (o podés escribirle) tests?  Todavía no tiene tests escritos, pero es testeable sin cambiar la arquitectura: el backend es una API REST de Express con rutas finas (`supertest` contra `auth.js`/`games.js`/`reviews.js` alcanzaría), y el frontend son componentes React chicos (Vitest + Testing Library). Queda para el TP5, que es donde corresponde. 
+
+¿Entendés el código lo suficiente como para modificarlo?  Sí, a medida que lo codeaba con la Claude Code revisaba cada aspecto del código.
+|
+Tamaño (CRUD + 2-3 pantallas, no más) | Backend con CRUD sobre 3 entidades (usuarios, juegos, reseñas); frontend con exactamente 3 pantallas (Catálogo, Detalle de juego, Acceso). 
+
+
+
+--------------------------------------------
+## Decisiones de contenerización: imágenes base elegidas, estructura multi-stage, qué persiste y qué no.
+
+### Imágenes base elegidas
+
+| Componente | Imagen de build | Imagen final | Razón |
+|---|---|---|---|
+| Backend | `node:22-alpine` | `node:22-alpine` (solo copia `node_modules` ya resueltos) | Alpine usa musl en vez de glibc; un backend Express no necesita nada del sistema operativo completo |
+| Frontend | `node:22-alpine` | `nginx:alpine` | Node y Vite no hacen falta en runtime, solo en build. nginx sirve los estáticos compilados y hace de proxy hacia `/api/` |
+| Base de datos | — | `postgres:16-alpine` | Versión que usa el proyecto. Alpine por el peso mínimo |
+
+### Estructura multi-stage y persistencia
+
+**¿Por qué multi-stage?**
+Separar una etapa de "instalar dependencias/compilar" de una etapa de "correr" evita que la imagen
+final cargue con herramientas de build (compiladores, el propio `npm`) que solo hacen falta una
+vez, en build time. En el backend la etapa final solo copia `node_modules` ya resueltos; en el
+frontend, la etapa final ni siquiera tiene Node adentro: es `nginx:alpine` sirviendo los estáticos
+que generó Vite en la etapa anterior.
+
+**Orden de instrucciones para aprovechar el cache:**
+Copiamos primero `package*.json`, instalamos dependencias con `npm ci`, y recién después copiamos
+el código fuente (`src/` o el resto del proyecto). Así Docker no reinstala todas las dependencias
+cada vez que cambia una línea de código — solo cuando cambia el manifiesto de dependencias.
+
+**Qué persiste**
+Solo los datos de PostgreSQL, vía el volumen nombrado `db_data`. Los contenedores de `backend` y
+`frontend` son descartables a propósito: no guardan estado, así que se pueden recrear
+(`docker compose up -d --build`) sin perder nada. Si el volumen se borra explícitamente
+(`down -v`), la app vuelve a arrancar con el esquema y los 3 juegos semilla, nunca vacía sin más:
+`ensureSchema()` + `seed()` corren en cada arranque y son idempotentes.
+
+**Secretos fuera de las imágenes**
+Ninguna contraseña ni clave está escrita en el `Dockerfile` ni en `docker-compose.yml` — entran
+todas por variables de entorno (`${DB_PASSWORD}`, `${JWT_SECRET}`, etc.) que a su vez vienen del
+`.env` local, no versionado. Esto también permite que la misma imagen sirva en desarrollo y en el
+registry sin reconstruirse.
+
+## Problemas encontrados y cómo los resolviste.
+
+Tuve problemas para generar el token, ponerlo en la terminal pero los resolví consultando con la IA y usando la terminal de bash.
+
+## Declaración de uso de IA
+
+Use Claude code para la redacción de este archivo y el de evidencias.md. Me ayudo a seguir los pasos de la guía con explicaciones sencillas.
+
+La app fue creada totalmente por Claude Code en base a una idea mía sobre hacer un sistema similar al de las reseñas de Steam.
