@@ -1,0 +1,10 @@
+# Lo que NO entra al contexto de build del backend.
+#
+# 🔴 node_modules/ es el crítico: si se copiara, los módulos instalados en TU
+# sistema operativo pisarían los que "npm ci" instaló para Linux dentro del
+# contenedor. Con módulos nativos eso rompe el build con errores de plataforma
+# que no mencionan la causa real.
+node_modules/
+npm-debug.log*
+.env
+.git/

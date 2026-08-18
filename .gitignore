@@ -4,7 +4,7 @@ bin/
 obj/
 dist/
 build/
-
+npm-debug.log*
 # secretos: NUNCA se versionan
 .env
 *.local
@@ -14,3 +14,8 @@ build/
 Thumbs.db
 .vscode/
 .idea/
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
