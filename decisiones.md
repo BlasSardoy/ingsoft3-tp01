@@ -29,13 +29,13 @@ Usé Claude para facilitarme la instalación y configuración de entorno. Interp
 
 **GameRate** es un catálogo de videojuegos con reseñas: los usuarios buscan juegos, califican la
 jugabilidad de 1 a 5 y dejan un comentario, y un administrador mantiene el catálogo (altas y bajas
-de juegos, moderación de reseñas ajenas).
+de juegos, moderación de reseñas ajenas). Lo elegí porque queria hacer algo parecido al sistema de Steam.
 
 Contra los 4 criterios de la guía (§3.3):
 
 ¿Buildea y corre localmente hoy, sin magia? Sí. `docker compose up -d --build` levanta los 3 servicios desde cero, sin ningún paso manual salvo copiar el `.env`. Lo probé antes de comprometerme y lo sigo probando en cada entrega.
 
-¿Tiene (o podés escribirle) tests?  Todavía no tiene tests escritos, pero es testeable sin cambiar la arquitectura: el backend es una API REST de Express con rutas finas (`supertest` contra `auth.js`/`games.js`/`reviews.js` alcanzaría), y el frontend son componentes React chicos (Vitest + Testing Library). Queda para el TP5, que es donde corresponde. 
+¿Tiene (o podés escribirle) tests?  Todavía no tiene tests escritos, pero es testeable sin cambiar la arquitectura: el backend es una API REST de Express con rutas finas (`supertest` contra `auth.js`/`games.js`/`reviews.js` alcanzaría), y el frontend son componentes React chicos (Vitest + Testing Library). 
 
 ¿Entendés el código lo suficiente como para modificarlo?  Sí, a medida que lo codeaba con la Claude Code revisaba cada aspecto del código.
 |

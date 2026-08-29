@@ -6,11 +6,9 @@ services:
     image: postgres:16-alpine
 
     environment:
-      # La contraseña NO está escrita acá: entra por el .env, que no se
-      # commitea. Lo único versionado es .env.example, sin secretos reales.
+      
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      # Crea la base "app" al inicializarse. Sin esto el backend fallaría con
-      # "database app does not exist".
+  
       POSTGRES_DB: app
 
     volumes:
