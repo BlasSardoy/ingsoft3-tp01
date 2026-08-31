@@ -71,3 +71,5 @@ export default function App() {
     </>
   );
 }
+// TODO: mostrar mensaje de carga en el catálogo
+import algoQueNoExiste from './no-existe';
