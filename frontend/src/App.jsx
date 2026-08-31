@@ -71,3 +71,4 @@ export default function App() {
     </>
   );
 }
+// TODO: mostrar mensaje de carga en el catálogo
