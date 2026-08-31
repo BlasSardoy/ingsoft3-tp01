@@ -1,3 +1,5 @@
+[![CI](https://github.com/BlasSardoy/ingsoft3-tp01/actions/workflows/ci.yml/badge.svg)](https://github.com/BlasSardoy/ingsoft3-tp01/actions/workflows/ci.yml)
+
 # Proyecto IngSoft3 — GameRate
 
 **GameRate** es un catálogo de videojuegos con reseñas: los usuarios buscan juegos, califican la
