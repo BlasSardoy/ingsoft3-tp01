@@ -110,3 +110,33 @@ Un problema fue con Closes #123: lo puse en un comentario del PR en vez de en la
 
 Declaración de uso de IA
 Utilicé IA para adaptar el ejemplo del video del historia mal escrita a mi trabajo.
+
+------------------------------------
+# Decisiones TP4
+--------------------------------------------
+## Estructura del pipeline: por qué esos jobs y por qué en paralelo
+
+Dos jobs, `build-backend` y `build-frontend`, uno por cada Dockerfile que ya tenía del TP2.
+Corren en paralelo porque son independientes entre sí, así que no tiene sentido serializarlos y hacer esperar uno al otro. Cada uno corre en su propio runner limpio, sin compartir filesystem.
+
+## Qué cachea mi pipeline y qué pasa si el cache desaparece
+
+Se cachean las capas de cada imagen (`cache-from`/`cache-to: type=gha`), con un `scope`
+distinto por job (`backend` / `frontend`) para que no se pisen entre sí. Como mi Dockerfile
+copia primero `package*.json` y corre `npm ci` antes de copiar el resto del código, esa capa se
+reutiliza cuando solo cambio código y no dependencias. Si el cache desaparece,el pipeline construye todo de cero,más lento, pero funciona igual: el cache es una optimizacipn, no depenencia.
+
+## Por qué el pipeline construye con mi Dockerfile en vez de compilar por su cuenta
+
+Si el workflow instalara dependencias y armara la app con sus propios comandos (`npm install`,
+`npm run build`), tendría dos definiciones de build distintas, la del pipeline y la que
+realmente se usa para desplegar, que tarde o temprano divergen. Usando el mismo Dockerfile del
+TP2, lo que se verifica en CI es exactamente lo que se despliega.
+
+## Problemas encontrados y cómo los resolví
+
+Activé el gate pidiendo los checks build-backend/build-frontend antes de mergear a main el workflow real, así que la rama de la demo partió de un main viejo con un job distinto (build, del TP3) y quedó bloqueada por checks que nunca iban a existir, no por el build roto. Lo resolví mergeando primero el workflow real y recreando la rama de la demo desde ese main actualizado.
+
+## Declaración de uso de IA
+
+Usé Claude  para elegir dónde romper el build (el frontend, porque el backend Express no compila ni empaqueta). Me ayodó para escribir mis ideas en el archivo de decisiones.md.
