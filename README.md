@@ -196,16 +196,18 @@ evidencias.md                 capturas y salidas que respaldan cada entrega
 
 ---
 
+
 ## Trabajos prácticos
 
 | TP | Tema | Tag |
 |---|---|---|
 | TP1 | Git colaborativo: ramas, Pull Requests, protección de `main`, versionado | `v1.0.0` |
-| TP2 | Contenedores: Dockerfiles multi-stage, compose, registry | `tp2` |
+| TP2 | Contenedores: Dockerfiles multi-stage, compose, registry | `v2.0.0` |
+| TP3 | Planificación y trazabilidad: GitHub Projects, jerarquía épica/historia/tarea, sprint, board | `v3.0.0` |
+| TP4 | CI: Pipelines as Code — build en paralelo, cache de capas, gate y badge | `v4.0.0` |
 
 Las decisiones técnicas de cada entrega están en [`decisiones.md`](decisiones.md) y las capturas que
 las respaldan en [`evidencias.md`](evidencias.md).
 
 `main` está protegida: todo cambio entra por Pull Request, incluidos los de quien administra el
 repositorio.
-
