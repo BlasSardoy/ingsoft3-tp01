@@ -92,7 +92,7 @@ Use Claude code para la redacción de este archivo y el de evidencias.md. Me ayu
 La app fue creada totalmente por Claude Code en base a una idea mía sobre hacer un sistema similar al de las reseñas de Steam.
 
 --------------------------------------
-#Decisiones TP3
+# Decisiones TP3
 
 Duración del sprint.
 Elegí sprints de 1 semana, alineados con el ritmo de entrega de la materia. Cerraría la historia de CI antes de arrancar el TP4.
