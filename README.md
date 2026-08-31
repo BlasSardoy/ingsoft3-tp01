@@ -206,3 +206,4 @@ las respaldan en [`evidencias.md`](evidencias.md).
 
 `main` está protegida: todo cambio entra por Pull Request, incluidos los de quien administra el
 repositorio.
+
