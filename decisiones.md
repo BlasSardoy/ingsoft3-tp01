@@ -1,4 +1,4 @@
-## Decisiones — TP1
+# Decisiones — TP1
 --------------------------------------------
 1. Por qué Git no pudo resolver el conflicto solo — y qué habría tenido que pasar para que nunca apareciera.
 
@@ -90,3 +90,23 @@ Tuve problemas para generar el token, ponerlo en la terminal pero los resolví c
 Use Claude code para la redacción de este archivo y el de evidencias.md. Me ayudo a seguir los pasos de la guía con explicaciones sencillas.
 
 La app fue creada totalmente por Claude Code en base a una idea mía sobre hacer un sistema similar al de las reseñas de Steam.
+
+--------------------------------------
+# Decisiones TP3
+
+Duración del sprint.
+Elegí sprints de 1 semana, alineados con el ritmo de entrega de la materia. Cerraría la historia de CI antes de arrancar el TP4.
+
+Número del límite de trabajo en progreso
+Puse 2 tareas como límite para evitar el hecho de hacer demasiadas cosas al mismo tiempo y que nada se termine estancando el progreso. El video sugiere n trabajadores +1, y como yo estoy solo serían 2.
+
+Diagnóstico de la historia mal escrita: por qué está mal escrita y cómo la reescribirías. Dos renglones.
+
+"Como desarrollador quiero crear la tabla reseñas" es una tarea disfrazada de historia: no hay un beneficio observable para un usuario, es trabajo técnico interno de infraestructura de datos. La reescribiría como "Como usuario quiero dejar una reseña de un juego para compartir mi opinión con otros jugadores",  ahí sí hay un rol, una capacidad y un beneficio claros, y "crear la tabla reseñas" pasaría a ser una tarea técnica dentro de esa historia, no una historia en sí misma.
+
+Problemas encontrados y cómo los resolviste.
+
+Un problema fue con Closes #123: lo puse en un comentario del PR en vez de en la descripción original, y el número tampoco correspondía a una tarea real de mi repo. GitHub solo cierra un issue automáticamente si Closes #N está en la descripción del PR o en un commit.  Lo resolví editando la descripción original del PR (#16) con el número de la tarea real (#13); ahí quedó como link activo y, al mergear, la tarea se cerró sola y pasó a Done en el board.
+
+Declaración de uso de IA
+Utilicé IA para adaptar el ejemplo del video del historia mal escrita a mi trabajo.
