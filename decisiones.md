@@ -179,4 +179,4 @@ puntaje/comentario/foto actualiza la fila existente en vez de crear una nueva. V
 **Cómo se verificó:** `curl` contra los tres endpoints tocados (alta de juego con URL válida/
 inválida/vacía, upsert de reseña con foto) y prueba manual en el navegador.
 
-**Link al PR:** _(completar al abrir el PR)_
+**Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
