@@ -16,7 +16,12 @@ export default defineConfig({
         "src/db.js", // esquema SQL, terreno de integración
         "src/routes/**", // pegamento HTTP — su lógica ya vive en reglas.js/servicios/**
       ],
-      thresholds: { lines: 80, branches: 80 }, // provisorio: se fija con la medición real (PR 3)
+      // Fijado con la medición real del PR 3: 90.11% líneas, 79.24% ramas.
+      // Con margen hacia abajo para no romper con fluctuaciones chicas; el
+      // resto de la brecha en ramas es a propósito (ver auth.test.js: el
+      // req.user?.role de requireAdmin queda sin testear para el ejercicio
+      // del camino sin cubrir del PR 4/5).
+      thresholds: { lines: 85, branches: 75 },
     },
   },
 });

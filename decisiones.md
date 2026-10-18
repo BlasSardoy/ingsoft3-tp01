@@ -152,20 +152,61 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 
 ## Qué lógica elegí testear y por qué ésa
 
-_(se completa en el PR 1 y el PR 2)_
+Backend: las REGLA 1 (contraseña ≥ 6 y campos obligatorios), REGLA 2 (rating 1-5, entero),
+REGLA 3 (usuario/email único), REGLA 5 (sólo admin crea/borra juegos) y REGLA 6 (sólo el dueño
+o un admin borra una reseña) — 32 tests repartidos sobre esas reglas más los servicios que las
+rodean. Elegí ésas porque son donde un bug duele de verdad: un usuario borrando reseñas ajenas,
+o un usuario cualquiera dándose de alta como si fuera admin desde el cliente (la REGLA 5 se
+aplica en el backend aunque el botón esté escondido en el front, por eso el middleware se
+testea directo). Frontend: las mismas tres técnicas sobre `puedeEnviarAcceso`,
+`puedeEnviarResena`, `puedeGuardarJuego` y `estrellasLlenas`, más el cliente HTTP (`request`).
+
+REGLA 4 (una reseña por usuario y juego) queda **fuera** de la suite: vive en el `ON CONFLICT`
+del SQL y en el `UNIQUE` de la tabla (`db.js`), no en código JavaScript — es terreno de
+integración (probarla de verdad exige una base real), no unitario.
+
+Link a la corrida con la suite verde (back + front, 47 tests): _(completar con el run del PR 3)_
 
 ## Umbral de coverage
 
-_(se completa en el PR 3: número, métrica — línea, rama o las dos — y el número de rama real del
-día, lo haya usado o no como umbral)_
+**Backend**: `lines: 85`, `branches: 75`. La medición real del día es 90.11% líneas y 79.24%
+ramas — puse el umbral unos puntos abajo de cada uno para que no se rompa por una fluctuación
+chica, pero sí se rompa si baja de verdad. Gran parte de la brecha en ramas es a propósito: el
+`req.user?.role` de `requireAdmin` queda sin testear para el ejercicio del camino sin cubrir.
+
+**Frontend**: `lines: 90`, `branches: 75`. Medición real: 97.5% líneas y 82.35% ramas — acá la
+cobertura es más alta porque `src/lib/**` son funciones puras chicas, sin ramas de manejo de
+errores de infraestructura como las que sí tiene el backend.
+
+Para subir cualquiera de los dos números haría falta cubrir las ramas de error que hoy no se
+ejercitan a propósito (la de `requireAdmin`) o las del `catch` genérico de cada servicio (el
+`throw err;` que recae en el 500 del handler, no testeado porque no es una regla de negocio,
+es el camino "la base explotó por algo que no previ").
+
+Link a la corrida con el Summary: _(completar con el run del PR 3)_
 
 ## Qué quedó fuera de la cuenta de cobertura
 
-_(se completa en el PR 1 y el PR 2, backend y frontend)_
+**Backend**: `src/index.js` (arranque, cablea Express), `src/seed.js` (datos de ejemplo),
+`src/db.js` (el esquema SQL, terreno de integración) y `src/routes/**` — este último se pudo
+excluir porque **primero** se sacó toda la lógica que tenía (los obligatorios de
+`POST /games`, el 404 de juego/reseña inexistente, la traducción del 23503, la comparación de
+credenciales del login) a `src/reglas.js` y `src/servicios/**`; si algo de eso se hubiera
+quedado en la ruta, excluir `routes/**` habría sido esconder código sin testear, no medir lo
+que importa.
+
+**Frontend**: todo lo que no es `src/lib/**` ni `src/api.js` — components y pages, que se
+verifican con e2e en el TP7 (ahí sí importa el DOM, acá los tests son sin DOM a propósito).
 
 ## Por qué coverage alto no garantiza calidad
 
-_(se completa con el hallazgo de `validarRating` dejando pasar `2.5`, decidido en el PR 1)_
+El ejemplo propio: `validarRating` tenía `!rating || rating < 1 || rating > 5`. Esa línea
+estaba 100% cubierta por los tests que probaban 0 y 6 — y la regla igual dejaba pasar `"abc"`
+y `2.5`, que JavaScript no rechaza con ese chequeo. Recién la base los rechazaba al convertir a
+`SMALLINT`, así que la API respondía 500 en vez de 400: un bug real, invisible para el
+coverage, porque coverage mide que la línea se ejecutó, no que la regla esté bien escrita. Lo
+corregí con `Number.isInteger` (PR 1) y agregué el caso `2.5` al test parametrizado, que antes
+del fix se ponía en rojo.
 
 ## Mi Pull Request bloqueado
 
@@ -174,12 +215,31 @@ para arreglarlo)_
 
 ## Refactor para poder mockear
 
-_(se completa en el PR 1 y el PR 2: qué cambió y por qué antes no se podía testear)_
+Antes, `registrarUsuario` y `borrarResena` (y el resto de los handlers) importaban `pool`
+directamente adentro del archivo de rutas — no había forma de reemplazarlo por un doble desde
+un test sin pegarle a una base de verdad. El refactor del PR 1 movió esa lógica a
+`src/servicios/{usuarios,resenas,juegos}.js`, donde cada función recibe `db` **por parámetro**
+en vez de importar `pool`; quien la llama decide qué le pasa (la app real le pasa el pool de
+verdad, el test le pasa un objeto falso con un `.query` controlado). Lo mismo del lado del
+front: `request` en `api.js` recibe `fetchFn` por parámetro (`fetch` por defecto), así el test
+le pasa un `vi.fn()` en vez de salir a la red.
+
+Link al PR 1: https://github.com/BlasSardoy/ingsoft3-tp01/pull/29
+Link al PR 2: https://github.com/BlasSardoy/ingsoft3-tp01/pull/30
 
 ## Mi stack contra la tabla «Tu stack, de un vistazo»
 
-_(se completa en el PR 1 y el PR 2 — GameRate no es el stack de la cátedra: backend Node/Express,
-no .NET; se usa vitest 3 de los dos lados)_
+GameRate no es el stack de la cátedra (.NET + vitest): el backend es Node 22 + Express
+(CommonJS), no .NET — pero se usa **vitest 3** en los dos lados igual, así que la fila del
+medidor de cobertura y la del umbral son las mismas que la guía. Parametrizado: `it.each`
+(igual que en vitest de la guía). Doble: `vi.fn()` (no hay Moq porque no hay .NET). Dónde
+viven los tests: al lado del código (`algo.test.js`), como en cualquier proyecto JS/TS — no
+hay carpeta de tests aparte, porque ni CommonJS ni vitest la piden. Qué entra en la cuenta:
+`include`/`exclude` de `coverage` en `vitest.config.js`/`vite.config.js` (el backend excluye,
+el frontend sólo incluye). Etapa de tests: `npm ci` **sin** `--omit=dev` en una etapa propia del
+Dockerfile, ni `FROM deps` (que instaló sin devDependencies) ni `FROM build` del backend (no
+existe esa etapa ahí) — el frontend sí puede `FROM build AS test` porque esa etapa ya tiene
+Node y todas las dependencias.
 
 ## El ejercicio del camino sin cubrir
 
@@ -188,7 +248,11 @@ recorrería, y qué se decidió)_
 
 ## Problemas encontrados
 
-_(se va completando a medida que aparecen)_
+- Corriendo `docker run -e COVERAGE_DIR=/salida/reporte ...` desde Git Bash en Windows, la ruta
+  `/salida/reporte` se traducía sola a una ruta de Windows (mangling de MSYS) antes de llegarle
+  al contenedor, y vitest fallaba con "No test files found" interpretando el pedazo mangleado
+  como un filtro de archivos. Se resolvía con `MSYS_NO_PATHCONV=1` antes del `docker run` — sólo
+  hace falta para probar la receta a mano en Windows; en el pipeline (Linux) no pasa.
 
 ## Declaración de uso de IA
 

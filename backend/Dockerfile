@@ -1,7 +1,7 @@
 # =============================================================================
 # DOCKERFILE DEL BACKEND — multi-stage
 # =============================================================================
-# Dos etapas. Cada "FROM" abre una imagen nueva y descarta lo anterior, salvo
+# Tres etapas. Cada "FROM" abre una imagen nueva y descarta lo anterior, salvo
 # lo que se copie explícitamente con COPY --from.
 # =============================================================================
 
@@ -20,7 +20,18 @@ COPY package*.json ./
 # "--omit=dev" deja afuera las devDependencies: no van a producción.
 RUN npm ci --omit=dev
 
-# ---- Etapa 2: runtime ------------------------------------------------------
+# ---- Etapa 2: tests (con devDependencies; no llega a la imagen final) ------
+# No puede ser "FROM deps": esa etapa instaló SIN devDependencies (vitest
+# vive ahí) a propósito, para que la imagen final no las cargue. Por eso
+# ésta es una etapa propia, con su propio "npm ci" completo.
+FROM node:22-alpine AS test
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ENTRYPOINT ["npm", "run", "test:ci"]
+
+# ---- Etapa 3: runtime -------------------------------------------------------
 FROM node:22-alpine AS final
 WORKDIR /app
 

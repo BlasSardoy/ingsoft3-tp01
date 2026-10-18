@@ -4,8 +4,8 @@
 # Caso más extremo que el del backend: la imagen final NO TIENE NODE.
 #
 # Una SPA de React compila a HTML + CSS + JS estáticos. Una vez compilada,
-# Node no hace falta para nada: alcanza un servidor web. Por eso la etapa 2
-# parte de nginx y sólo copia la carpeta dist/ que produjo la etapa 1.
+# Node no hace falta para nada: alcanza un servidor web. Por eso la etapa
+# final parte de nginx y sólo copia la carpeta dist/ que produjo la etapa 1.
 # =============================================================================
 
 # ---- Etapa 1: compilar la SPA ----------------------------------------------
@@ -21,7 +21,12 @@ COPY . .
 # Vite deja el resultado en /app/dist
 RUN npm run build
 
-# ---- Etapa 2: nginx sirve los estáticos ------------------------------------
+# ---- Etapa 2: tests (parte del build: ya tiene Node y las dependencias) ----
+# Sin WORKDIR: hereda el /app de la etapa "build".
+FROM build AS test
+ENTRYPOINT ["npm", "run", "test:ci"]
+
+# ---- Etapa 3: nginx sirve los estáticos ------------------------------------
 FROM nginx:alpine
 
 # La configuración que hace el proxy de /api hacia el backend.
