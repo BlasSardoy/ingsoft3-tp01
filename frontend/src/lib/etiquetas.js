@@ -1,9 +1,9 @@
 // ============================================================================
 // ETIQUETA DE PUNTAJE — cómo se lee el promedio de un juego de un vistazo.
 // ============================================================================
-// Función pura, varios caminos, SIN TEST a propósito: es la demostración del
-// PR 4 del TP5 — el umbral de cobertura tiene que frenar un merge aunque el
-// código compile y no rompa nada.
+// Función pura, varios caminos. Entró SIN TEST a propósito en el PR 4 del TP5
+// (#32) para mostrar que el umbral frena un merge aunque el código compile;
+// los tests se agregaron en ese mismo PR (etiquetas.test.js), uno por camino.
 // ============================================================================
 export function etiquetaDePuntaje(promedio, cantidad) {
   if (cantidad === 0) {

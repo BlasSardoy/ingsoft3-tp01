@@ -16,11 +16,11 @@ export default defineConfig({
         "src/db.js", // esquema SQL, terreno de integración
         "src/routes/**", // pegamento HTTP — su lógica ya vive en reglas.js/servicios/**
       ],
-      // Fijado con la medición real del PR 3: 90.11% líneas, 79.24% ramas.
-      // Con margen hacia abajo para no romper con fluctuaciones chicas; el
-      // resto de la brecha en ramas es a propósito (ver auth.test.js: el
-      // req.user?.role de requireAdmin queda sin testear para el ejercicio
-      // del camino sin cubrir del PR 4/5).
+      // Fijado con la medición real del PR 3: 90.11% líneas, 79.24% ramas,
+      // con margen hacia abajo para no romper con fluctuaciones chicas.
+      // Hoy mide 92.83% / 84.21%. Lo que queda sin cubrir en ramas es
+      // servicios/juegos.js y el catch genérico de cada servicio (ver
+      // decisiones.md › TP5 › Umbral de coverage).
       thresholds: { lines: 85, branches: 75 },
     },
   },

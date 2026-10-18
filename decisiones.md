@@ -147,15 +147,14 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 
 > Esta sección responde exactamente las preguntas que pide 05-testing-calidad.md (sección
 > "Trabajo Práctico 05 › Entregables"), no un registro por PR. Cada link va pegado a la decisión
-> que prueba. Los borradores de cada respuesta los propone la IA; quedan para reescribirlos con
-> mis propias palabras antes de la defensa.
+> que prueba.
 
 ## Qué lógica elegí testear y por qué ésa
 
 Backend: las REGLA 1 (contraseña ≥ 6 y campos obligatorios), REGLA 2 (rating 1-5, entero),
 REGLA 3 (usuario/email único), REGLA 5 (sólo admin crea/borra juegos) y REGLA 6 (sólo el dueño
-o un admin borra una reseña) — 32 tests repartidos sobre esas reglas más los servicios que las
-rodean. Elegí ésas porque son donde un bug duele de verdad: un usuario borrando reseñas ajenas,
+o un admin borra una reseña) — 25 métodos de test (34 casos, contando cada fila de `it.each`)
+repartidos sobre esas reglas más los servicios que las rodean. Elegí ésas porque son donde un bug duele de verdad: un usuario borrando reseñas ajenas,
 o un usuario cualquiera dándose de alta como si fuera admin desde el cliente (la REGLA 5 se
 aplica en el backend aunque el botón esté escondido en el front, por eso el middleware se
 testea directo). Frontend: las mismas tres técnicas sobre `puedeEnviarAcceso`,
@@ -165,23 +164,36 @@ REGLA 4 (una reseña por usuario y juego) queda **fuera** de la suite: vive en e
 del SQL y en el `UNIQUE` de la tabla (`db.js`), no en código JavaScript — es terreno de
 integración (probarla de verdad exige una base real), no unitario.
 
-Link a la corrida con la suite verde (back + front, 47 tests): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
+Hoy, en `main`: backend 25 métodos / 34 casos, frontend 10 métodos / 19 casos (los números
+de abajo cuentan métodos, que es lo que pide la consigna; los casos son las filas de `it.each`).
+
+Link a la corrida con la suite verde (back + front): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
 ## Umbral de coverage
 
-**Backend**: `lines: 85`, `branches: 75`. La medición real del día es 90.11% líneas y 79.24%
-ramas — puse el umbral unos puntos abajo de cada uno para que no se rompa por una fluctuación
-chica, pero sí se rompa si baja de verdad. Gran parte de la brecha en ramas es a propósito: el
-`req.user?.role` de `requireAdmin` queda sin testear para el ejercicio del camino sin cubrir.
+El umbral va sobre las **dos** métricas, líneas y ramas, en los dos lados.
 
-**Frontend**: `lines: 90`, `branches: 75`. Medición real: 97.5% líneas y 82.35% ramas — acá la
-cobertura es más alta porque `src/lib/**` son funciones puras chicas, sin ramas de manejo de
-errores de infraestructura como las que sí tiene el backend.
+**Backend**: `lines: 85`, `branches: 75`. Lo fijé con la medición del PR 3 (90.11% líneas,
+79.24% ramas), unos puntos abajo de cada número para que no se rompa por una fluctuación chica
+pero sí si baja de verdad. **Hoy, en `main`, mide 92.83% líneas y 84.21% ramas**: subió porque
+después agregué los tests de `authenticate` (el ejercicio del camino sin cubrir). Lo que queda
+sin cubrir en ramas está en `servicios/juegos.js` (66.66% de ramas: el listado y el detalle del
+juego con sus reseñas) y en el `throw err;` del `catch` genérico de cada servicio, que recae en
+el 500 del handler — no lo testeo porque no es una regla de negocio, es el camino "la base
+explotó por algo que no preví".
 
-Para subir cualquiera de los dos números haría falta cubrir las ramas de error que hoy no se
-ejercitan a propósito (la de `requireAdmin`) o las del `catch` genérico de cada servicio (el
-`throw err;` que recae en el 500 del handler, no testeado porque no es una regla de negocio,
-es el camino "la base explotó por algo que no previ").
+**Frontend**: `lines: 90`, `branches: 75`. Lo fijé con la medición del PR 3 (97.5% líneas,
+82.35% ramas). **Hoy mide 97.58% líneas y 86.95% ramas.** Acá la cobertura es más alta porque
+`src/lib/**` son funciones puras chicas, sin ramas de manejo de errores de infraestructura como
+las que sí tiene el backend. Lo que falta está en `api.js` (71.42% de ramas): el armado del query
+string de `listGames` (líneas 63-65) y los atajos del objeto `api`, que son pegamento
+de una línea sobre `request` — `request` en sí está testeado.
+
+**Por qué no lo subí aunque ahora tenga margen**: con 7-8 puntos de holgura el umbral sigue
+frenando un archivo nuevo de tamaño normal sin tests (el PR 5 lo prueba: un solo archivo bajó
+el backend a 81.84%). Subirlo a 90/80 en el back sería posible, pero me obligaría a testear el
+`catch` genérico o el detalle de juegos, que hoy son terreno de integración (TP7), no de reglas.
+Para subirlo habría que primero testear `obtenerJuego` con reseñas y el listado de `juegos.js`.
 
 Link a la corrida con el Summary (coverage de los dos lados, publicado y descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
@@ -225,6 +237,9 @@ threshold (90%)`. El paso `Construir la imagen del frontend` (el build normal) y
 `Construir la etapa de tests` compilaron los dos sin problema — lo que frenó fue sólo el paso de
 coverage, no la compilación: es la prueba de que éste es el gate del TP5 y no el del TP4.
 
+(En la descripción del PR figura una estimación previa, 84.17%; el número que vale es el del
+log de la corrida, 82.25%, que es lo que midió vitest en el contenedor del pipeline.)
+
 Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156227929
 PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/32
 
@@ -234,7 +249,8 @@ Para arreglarlo escribí un test por cada camino de `etiquetaDePuntaje` (paramet
 **El freno vigente (PR 5, no se toca hasta la defensa).** Mismo ejercicio del lado del
 backend: `backend/src/formato.js` (`clasificarCatalogo`, `resumenDeResenas`), sin tests. El
 check `build-backend` se puso en rojo en la métrica **líneas** (81.84% medido, contra el umbral
-de 85%): `ERROR: Coverage for lines (81.84%) does not meet global threshold (85%)`. A
+de 85%): `ERROR: Coverage for lines (81.84%) does not meet global threshold (85%)`. (La
+descripción del PR dice 83.28%, que era una estimación hecha antes de correrlo; vale el log.) A
 diferencia del PR 4, este PR **queda abierto y en rojo**: `mergeStateStatus: BLOCKED` lo
 confirma — GitHub no deja mergearlo aunque yo sea el dueño del repo.
 
