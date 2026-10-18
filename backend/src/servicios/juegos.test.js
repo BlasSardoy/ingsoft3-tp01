@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { crearJuego, obtenerJuego, borrarJuego } from "./juegos.js";
 
 describe("crearJuego", () => {
-  it.skip("sin platform, no llega a tocar la base", async () => {
+  it("sin platform, no llega a tocar la base", async () => {
     // Arrange
     const dbFalsa = { query: vi.fn() };
 
@@ -14,7 +14,7 @@ describe("crearJuego", () => {
     expect(dbFalsa.query).not.toHaveBeenCalled();
   });
 
-  it.skip("con los campos completos, inserta y devuelve el juego creado", async () => {
+  it("con los campos completos, inserta y devuelve el juego creado", async () => {
     // Arrange
     const juegoCreado = { id: 5, title: "Celeste" };
     const dbFalsa = { query: vi.fn().mockResolvedValue({ rows: [juegoCreado] }) };
@@ -33,7 +33,7 @@ describe("crearJuego", () => {
 });
 
 describe("obtenerJuego", () => {
-  it.skip("si el juego no existe, responde 404", async () => {
+  it("si el juego no existe, responde 404", async () => {
     // Arrange
     const dbFalsa = { query: vi.fn().mockResolvedValue({ rows: [] }) };
 
@@ -46,7 +46,7 @@ describe("obtenerJuego", () => {
 });
 
 describe("borrarJuego", () => {
-  it.skip("si el juego no existe, responde 404", async () => {
+  it("si el juego no existe, responde 404", async () => {
     // Arrange
     const dbFalsa = { query: vi.fn().mockResolvedValue({ rowCount: 0 }) };
 
