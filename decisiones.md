@@ -145,57 +145,47 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 # Decisiones TP5
 --------------------------------------------
 
-> Esta sección sigue la estructura que pide el brief del TP5, no un registro por PR. Los
-> borradores de cada respuesta los propone la IA; quedan para reescribirlos con mis propias
-> palabras antes de la defensa.
+> Esta sección responde exactamente las preguntas que pide 05-testing-calidad.md (sección
+> "Trabajo Práctico 05 › Entregables"), no un registro por PR. Cada link va pegado a la decisión
+> que prueba. Los borradores de cada respuesta los propone la IA; quedan para reescribirlos con
+> mis propias palabras antes de la defensa.
 
-## Reglas agregadas antes de testear (PR 0)
+## Qué lógica elegí testear y por qué ésa
 
-REGLA 7 — la foto de un juego (`games.image_url`) y la foto de una reseña (`reviews.photo_url`)
-son opcionales, pero si vienen tienen que ser una URL `http(s)` válida. Se agregó para tener una
-regla de negocio nueva con casos de test claros (válida / sin protocolo / vacía) antes de escribir
-la suite — el resto del PR 0 (migración de columnas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`,
-edición de reseña ya existente vía el upsert que ya tenía la REGLA 4) no agrega reglas nuevas.
-PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
+_(se completa en el PR 1 y el PR 2 — entre lo que entra: la REGLA 7 agregada en el PR 0, validar
+que la foto de un juego/reseña sea una URL http(s) válida: https://github.com/BlasSardoy/ingsoft3-tp01/pull/25)_
 
-El tema visual (PR #26, https://github.com/BlasSardoy/ingsoft3-tp01/pull/26) es un cambio estético
-sin reglas de negocio asociadas — no se registra acá.
+## Umbral de coverage
 
-## Qué lógica testeé y por qué ésa
+_(se completa en el PR 3: número, métrica — línea, rama o las dos — y el número de rama real del
+día, lo haya usado o no como umbral)_
 
-_(se completa en el PR 1 y el PR 2)_
+## Qué quedó fuera de la cuenta de cobertura
 
-## Mi stack contra la tabla «Tu stack, de un vistazo»
+_(se completa en el PR 1 y el PR 2, backend y frontend)_
 
-_(se completa en el PR 1 y el PR 2)_
+## Por qué coverage alto no garantiza calidad
+
+_(se completa con el hallazgo de `validarRating` dejando pasar `2.5`, decidido en el PR 1)_
+
+## Mi Pull Request bloqueado
+
+_(se completa en el PR 4: qué check se puso en rojo, en qué métrica, por qué, y qué se escribió
+para arreglarlo)_
 
 ## Refactor para poder mockear
 
-_(se completa en el PR 1 y el PR 2)_
+_(se completa en el PR 1 y el PR 2: qué cambió y por qué antes no se podía testear)_
 
-## Umbral
+## Mi stack contra la tabla «Tu stack, de un vistazo»
 
-_(se completa en el PR 3)_
+_(se completa en el PR 1 y el PR 2 — GameRate no es el stack de la cátedra: backend Node/Express,
+no .NET; se usa vitest 3 de los dos lados)_
 
-## Qué quedó fuera de la cuenta
+## El ejercicio del camino sin cubrir
 
-_(se completa en el PR 1 y el PR 2)_
-
-## Coverage alto no garantiza calidad
-
-_(se completa cuando se corrija — o no — el hallazgo de `validarRating` con `2.5`)_
-
-## Etapa de tests del backend
-
-_(se completa en el PR 3)_
-
-## PR bloqueado
-
-_(se completa en el PR 4 y el PR 5)_
-
-## Ejercicio del camino sin cubrir
-
-_(se completa en el PR 4 o el PR 5, con el reporte HTML de coverage)_
+_(se completa en el PR 4 o el PR 5, con el reporte HTML de coverage: qué línea es, qué entrada la
+recorrería, y qué se decidió)_
 
 ## Problemas encontrados
 
