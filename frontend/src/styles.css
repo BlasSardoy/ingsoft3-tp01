@@ -1,15 +1,17 @@
 :root {
-  --ink: #10121a;
-  --panel: #1a1d29;
-  --panel-border: #2b2f3f;
-  --cream: #f1e9d6;
-  --cream-ink: #1a1d29;
-  --amber: #f2a93b;
-  --amber-ink: #4a2f06;
-  --teal: #3fa796;
-  --rose: #e0654f;
-  --text: #eae6da;
-  --muted: #9a9aa8;
+  --ink: #06040f;
+  --panel: #130a26;
+  --panel-border: #3d2168;
+  --cream: #0e0820;
+  --cream-ink: #f0e6ff;
+  --amber: #ff2bd6;
+  --amber-ink: #1a0022;
+  --teal: #00e6ff;
+  --rose: #ff3b5c;
+  --text: #ece6ff;
+  --muted: #9583c4;
+  --glow-magenta: 0 0 12px rgba(255, 43, 214, 0.55);
+  --glow-cyan: 0 0 12px rgba(0, 230, 255, 0.45);
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
   color-scheme: dark;
@@ -28,7 +30,9 @@ body,
 body {
   margin: 0;
   background: var(--ink);
-  background-image: radial-gradient(circle at 20% 0%, #1c2033 0%, var(--ink) 45%);
+  background-image: radial-gradient(circle at 15% -10%, rgba(255, 43, 214, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(0, 230, 255, 0.12) 0%, transparent 40%),
+    var(--ink);
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.5;
@@ -40,10 +44,11 @@ h3 {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
   margin: 0 0 0.4em;
+  text-shadow: 0 0 18px rgba(255, 43, 214, 0.25);
 }
 
 a {
-  color: var(--amber);
+  color: var(--teal);
 }
 
 .muted {
@@ -62,8 +67,9 @@ textarea {
 }
 
 *:focus-visible {
-  outline: 2px solid var(--amber);
+  outline: 2px solid var(--teal);
   outline-offset: 2px;
+  box-shadow: var(--glow-cyan);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -85,6 +91,7 @@ textarea {
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   padding: 24px;
+  box-shadow: 0 0 0 1px rgba(0, 230, 255, 0.06), 0 8px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- navbar ---------- */
@@ -96,8 +103,9 @@ textarea {
   border-bottom: 1px solid var(--panel-border);
   position: sticky;
   top: 0;
-  background: rgba(16, 18, 26, 0.9);
+  background: rgba(6, 4, 15, 0.85);
   backdrop-filter: blur(6px);
+  box-shadow: 0 1px 0 rgba(0, 230, 255, 0.15);
   z-index: 10;
   flex-wrap: wrap;
   gap: 12px;
@@ -112,6 +120,7 @@ textarea {
   font-size: 1.25rem;
   color: var(--text);
   text-decoration: none;
+  text-shadow: 0 0 14px rgba(0, 230, 255, 0.4);
 }
 
 .navbar__cart {
@@ -119,6 +128,7 @@ textarea {
   height: 14px;
   background: var(--amber);
   border-radius: 4px 4px 4px 0;
+  box-shadow: var(--glow-magenta);
 }
 
 .navbar__links {
@@ -171,7 +181,7 @@ textarea {
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
-  transition: transform 0.1s ease, opacity 0.15s ease;
+  transition: transform 0.1s ease, opacity 0.15s ease, box-shadow 0.15s ease;
 }
 .btn:disabled {
   opacity: 0.5;
@@ -184,16 +194,27 @@ textarea {
 .btn--primary {
   background: var(--amber);
   color: var(--amber-ink);
+  box-shadow: var(--glow-magenta);
+}
+.btn--primary:not(:disabled):hover {
+  box-shadow: 0 0 20px rgba(255, 43, 214, 0.8);
 }
 .btn--ghost {
   background: transparent;
   border-color: var(--panel-border);
   color: var(--text);
 }
+.btn--ghost:not(:disabled):hover {
+  border-color: var(--teal);
+  box-shadow: var(--glow-cyan);
+}
 .btn--danger {
   background: transparent;
   border-color: var(--rose);
   color: var(--rose);
+}
+.btn--danger:not(:disabled):hover {
+  box-shadow: 0 0 14px rgba(255, 59, 92, 0.55);
 }
 .btn--small {
   padding: 6px 12px;
@@ -226,6 +247,10 @@ textarea {
   border-radius: 8px;
   padding: 10px 12px;
 }
+.search-bar input:focus,
+.search-bar select:focus {
+  border-color: var(--teal);
+}
 
 /* ---------- game grid / cartridge cards ---------- */
 .game-grid {
@@ -238,16 +263,18 @@ textarea {
   position: relative;
   background: var(--cream);
   color: var(--cream-ink);
+  border: 1px solid var(--panel-border);
   border-radius: 12px;
   padding: 22px 18px 18px;
   text-decoration: none;
   display: block;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .game-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-color: var(--teal);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), var(--glow-cyan);
 }
 /* la "muesca" perforada: hace que la ficha lea como un cartucho/boleta */
 .game-card__notch {
@@ -259,6 +286,7 @@ textarea {
   height: 16px;
   border-radius: 50%;
   background: var(--ink);
+  box-shadow: inset 0 0 6px rgba(0, 230, 255, 0.5);
 }
 .game-card__cover {
   display: block;
@@ -273,8 +301,8 @@ textarea {
   margin: 4px 0 2px;
 }
 .game-card .badge {
-  background: var(--cream-ink);
-  color: var(--cream);
+  background: var(--amber);
+  color: var(--amber-ink);
 }
 .game-card__footer {
   display: flex;
@@ -309,9 +337,11 @@ textarea {
 }
 .star--filled {
   color: var(--amber);
+  filter: drop-shadow(0 0 4px rgba(255, 43, 214, 0.7));
 }
 .game-card .star--filled {
-  color: #c9821a;
+  color: var(--teal);
+  filter: drop-shadow(0 0 4px rgba(0, 230, 255, 0.7));
 }
 
 /* ---------- auth pages ---------- */
@@ -341,6 +371,10 @@ textarea {
   border-radius: 8px;
   padding: 10px 12px;
 }
+.auth-card input:focus {
+  border-color: var(--teal);
+  box-shadow: var(--glow-cyan);
+}
 .field-hint {
   color: var(--rose);
   font-size: 0.8rem;
@@ -352,9 +386,10 @@ textarea {
   font-size: 0.9rem;
 }
 .alert--error {
-  background: rgba(224, 101, 79, 0.15);
+  background: rgba(255, 59, 92, 0.12);
   border: 1px solid var(--rose);
-  color: #ffb3a1;
+  color: #ff9cad;
+  box-shadow: 0 0 14px rgba(255, 59, 92, 0.25);
 }
 
 /* ---------- game detail ---------- */
@@ -394,6 +429,11 @@ textarea {
   border-radius: 8px;
   padding: 10px 12px;
 }
+.review-form textarea:focus,
+.review-form__photo:focus {
+  border-color: var(--teal);
+  box-shadow: var(--glow-cyan);
+}
 
 .reviews {
   margin-top: 28px;
@@ -409,6 +449,7 @@ textarea {
 }
 .review--mine {
   border-color: var(--amber);
+  box-shadow: var(--glow-magenta);
 }
 .review header {
   display: flex;
@@ -454,6 +495,11 @@ textarea {
   color: var(--text);
   border-radius: 8px;
   padding: 10px 12px;
+}
+.admin-form input:focus,
+.admin-form textarea:focus {
+  border-color: var(--teal);
+  box-shadow: var(--glow-cyan);
 }
 .admin-form__actions {
   grid-column: 1 / -1;

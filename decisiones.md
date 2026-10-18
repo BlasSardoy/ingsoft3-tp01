@@ -145,38 +145,51 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 # Decisiones TP5
 --------------------------------------------
 
-> Esta sección se va completando a medida que avanza el trabajo. Los borradores de cada entrada
-> los propone la IA; quedan para reescribirlos con mis propias palabras antes de la defensa.
+> Esta sección responde exactamente las preguntas que pide 05-testing-calidad.md (sección
+> "Trabajo Práctico 05 › Entregables"), no un registro por PR. Cada link va pegado a la decisión
+> que prueba. Los borradores de cada respuesta los propone la IA; quedan para reescribirlos con
+> mis propias palabras antes de la defensa.
 
-## PR 0 — Ajustes a la app antes de los tests
+## Qué lógica elegí testear y por qué ésa
 
-### Cambio: foto del juego y foto de la reseña (URL)
+_(se completa en el PR 1 y el PR 2)_
 
-**Qué se agregó:** dos columnas opcionales, `games.image_url` y `reviews.photo_url`, y una regla
-de negocio nueva (REGLA 7): si la URL viene, tiene que empezar con `http://` o `https://`; si no
-viene, no pasa nada (campo opcional). Se valida en `POST /api/games` y en el upsert de
-`POST /api/games/:id/reviews`.
+## Umbral de coverage
 
-**Por qué esta regla y no otra:** no se valida que la imagen exista de verdad del otro lado (eso
-pediría salir a la red desde el backend, o subir archivos reales — se evaluó y se descartó para
-no sumar una dependencia nueva como `multer` ni un volumen nuevo). La validación de formato alcanza
-para dar un error claro (400) en vez de guardar basura, y da un caso de test lindo: URL válida,
-URL sin protocolo (inválida), y campo vacío (válido, por opcional).
+_(se completa en el PR 3: número, métrica — línea, rama o las dos — y el número de rama real del
+día, lo haya usado o no como umbral)_
 
-**Migración:** las columnas se agregan con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` en
-`db.js`, aparte del `CREATE TABLE IF NOT EXISTS` del esquema original. `CREATE TABLE IF NOT EXISTS`
-no las hubiera sumado a un volumen ya existente (el `db_data` que ya estaba corriendo con el
-esquema viejo); el `ALTER` sí corre sobre un volumen existente sin perder datos, y no hace nada si
-las columnas ya están (por eso también es `IF NOT EXISTS`). Probado localmente: reinicié el backend
-sobre el volumen con datos previos y las columnas aparecieron solas, sin recrear nada.
+## Qué quedó fuera de la cuenta de cobertura
 
-**Editar una reseña ya existente:** no fue necesario tocar código — la REGLA 4 (una reseña por
-usuario y juego, con upsert sobre `ON CONFLICT`) ya cubría el caso: reenviar el formulario con otro
-puntaje/comentario/foto actualiza la fila existente en vez de crear una nueva. Verificado con
-`curl`: dos `POST` seguidos a la misma reseña devuelven el mismo `id` y el juego queda con
-`review_count: 1`.
+_(se completa en el PR 1 y el PR 2, backend y frontend)_
 
-**Cómo se verificó:** `curl` contra los tres endpoints tocados (alta de juego con URL válida/
-inválida/vacía, upsert de reseña con foto) y prueba manual en el navegador.
+## Por qué coverage alto no garantiza calidad
 
-**Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
+_(se completa con el hallazgo de `validarRating` dejando pasar `2.5`, decidido en el PR 1)_
+
+## Mi Pull Request bloqueado
+
+_(se completa en el PR 4: qué check se puso en rojo, en qué métrica, por qué, y qué se escribió
+para arreglarlo)_
+
+## Refactor para poder mockear
+
+_(se completa en el PR 1 y el PR 2: qué cambió y por qué antes no se podía testear)_
+
+## Mi stack contra la tabla «Tu stack, de un vistazo»
+
+_(se completa en el PR 1 y el PR 2 — GameRate no es el stack de la cátedra: backend Node/Express,
+no .NET; se usa vitest 3 de los dos lados)_
+
+## El ejercicio del camino sin cubrir
+
+_(se completa en el PR 4 o el PR 5, con el reporte HTML de coverage: qué línea es, qué entrada la
+recorrería, y qué se decidió)_
+
+## Problemas encontrados
+
+_(se va completando a medida que aparecen)_
+
+## Declaración de uso de IA
+
+_(se completa al cierre, con qué hizo Claude Code, qué hizo Blas, y cómo se verificó cada parte)_
