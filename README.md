@@ -164,7 +164,7 @@ backend/
     index.js               arranca Express, prepara la base y escucha
     db.js                  pool de PostgreSQL + creación del esquema
     seed.js                admin y juegos de ejemplo
-    reglas.js               reglas de negocio puras (sin pg ni Express) + sus tests
+    reglas.js              reglas de negocio puras (sin pg ni Express) + sus tests
     middleware/auth.js     verificación del JWT y chequeo de rol admin + sus tests
     servicios/usuarios.js  registro y login: reciben "db" por parámetro + sus tests
     servicios/resenas.js   alta/edición y borrado de reseñas + sus tests
@@ -180,11 +180,13 @@ frontend/
   src/
     main.jsx            monta React
     App.jsx             rutas + barra de navegación
-    api.js              cliente HTTP (único lugar que habla con la API)
+    api.js              cliente HTTP (único lugar que habla con la API) + su test
+    lib/reglas.js       reglas de negocio puras del front (sin DOM) + sus tests
     context/            estado de sesión (token y usuario)
     components/         StarRating
     pages/              Catalog · GameDetail · Access
     styles.css
+  vite.config.js        dev server + proxy /api + coverage de frontend
   Dockerfile            multi-stage: build con Vite → nginx sirve los estáticos
   nginx.conf            proxea /api hacia el servicio "backend"
   .dockerignore

@@ -13,6 +13,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import StarRating from "../components/StarRating.jsx";
+import { puedeGuardarJuego } from "../lib/reglas.js";
 
 export default function Catalog() {
   const { user, token } = useAuth();
@@ -173,8 +174,7 @@ function AdminPanel({ token, onCambio }) {
 
   // Mismo criterio que en Access.jsx: el botón espera a que los campos
   // obligatorios estén completos (los mismos que exige el backend).
-  const puedeGuardar =
-    form.title.trim() && form.category.trim() && form.platform.trim() && !guardando;
+  const puedeGuardar = puedeGuardarJuego({ ...form, guardando });
 
   function set(campo, valor) {
     setForm((f) => ({ ...f, [campo]: valor }));

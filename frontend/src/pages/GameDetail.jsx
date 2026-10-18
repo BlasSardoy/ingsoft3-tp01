@@ -10,6 +10,7 @@ import { useParams, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { api } from "../api.js";
 import StarRating from "../components/StarRating.jsx";
+import { puedeEnviarResena } from "../lib/reglas.js";
 
 export default function GameDetail() {
   const { id } = useParams(); // el :id de la URL
@@ -55,7 +56,7 @@ export default function GameDetail() {
 
   // Espeja la REGLA 2 del backend (puntaje de 1 a 5): sin estrella elegida,
   // el botón queda deshabilitado.
-  const puedeEnviar = miPuntaje >= 1 && miPuntaje <= 5 && !guardando;
+  const puedeEnviar = puedeEnviarResena(miPuntaje, guardando);
 
   async function enviarResena(e) {
     e.preventDefault();

@@ -9,6 +9,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { puedeEnviarAcceso } from "../lib/reglas.js";
 
 export default function Access() {
   const { login, register } = useAuth();
@@ -32,11 +33,7 @@ export default function Access() {
   // las reemplazan: esto es comodidad para el usuario, la validación de verdad
   // está en la API. Cualquiera podría llamar al endpoint sin pasar por acá.
   // -------------------------------------------------------------------------
-  const puedeEnviar =
-    email.includes("@") &&
-    password.length >= 6 &&
-    (!esRegistro || username.trim().length >= 3) &&
-    !enviando;
+  const puedeEnviar = puedeEnviarAcceso({ esRegistro, email, password, username, enviando });
 
   async function handleSubmit(e) {
     e.preventDefault();
