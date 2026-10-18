@@ -228,9 +228,11 @@ evidencias.md                 capturas y salidas que respaldan cada entrega
 | TP2 | Contenedores: Dockerfiles multi-stage, compose, registry | `v2.0.0` |
 | TP3 | Planificación y trazabilidad: GitHub Projects, jerarquía épica/historia/tarea, sprint, board | `v3.0.0` |
 | TP4 | CI: Pipelines as Code — build en paralelo, cache de capas, gate y badge | `v4.0.0` |
+| TP5 | Calidad automatizada: suite de tests, coverage en el pipeline, umbral que frena un merge | `v5.0.0` |
 
-Las decisiones técnicas de cada entrega están en [`decisiones.md`](decisiones.md) y las capturas que
-las respaldan en [`evidencias.md`](evidencias.md).
+Las decisiones técnicas de cada entrega están en [`decisiones.md`](decisiones.md); desde el TP3
+(inclusive) se prueban con URLs del repositorio en vez de capturas — `evidencias.md` sólo cubre
+los TP1 y TP2.
 
 `main` está protegida: todo cambio entra por Pull Request, incluidos los de quien administra el
 repositorio.
