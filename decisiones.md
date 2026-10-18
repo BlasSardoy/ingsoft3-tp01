@@ -217,8 +217,19 @@ del fix se ponía en rojo.
 
 ## Mi Pull Request bloqueado
 
-_(se completa en el PR 4: qué check se puso en rojo, en qué métrica, por qué, y qué se escribió
-para arreglarlo)_
+El PR 4 agrega `frontend/src/lib/etiquetas.js` (función `etiquetaDePuntaje`) sin ningún test: una función con cuatro
+caminos (sin reseñas / mixto / bien valorado / aclamado) que compila perfecto y no rompe nada.
+El check `build-frontend` se puso en rojo, en la métrica **líneas** (82.25% medido, contra el
+umbral de 90%), con vitest 3: `ERROR: Coverage for lines (82.25%) does not meet global
+threshold (90%)`. El paso `Construir la imagen del frontend` (el build normal) y el de
+`Construir la etapa de tests` compilaron los dos sin problema — lo que frenó fue sólo el paso de
+coverage, no la compilación: es la prueba de que éste es el gate del TP5 y no el del TP4.
+
+Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156227929
+PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/32
+
+Para arreglarlo escribí un test por cada camino de `etiquetaDePuntaje` (parametrizado,
+`it.each`), con lo que la cobertura volvió a estar arriba del umbral.
 
 ## Refactor para poder mockear
 
