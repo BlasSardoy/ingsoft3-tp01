@@ -23,7 +23,9 @@ export default defineConfig({
       // acá NO se excluye: se dice qué SÍ entra. Lo que no está en esta
       // lista (componentes, páginas) se verifica con e2e en el TP7.
       include: ["src/lib/**", "src/api.js"],
-      thresholds: { lines: 80, branches: 80 }, // provisorio: se fija con la medición real (PR 3)
+      // Fijado con la medición real del PR 3: 97.5% líneas, 82.35% ramas.
+      // Con margen hacia abajo para no romper con fluctuaciones chicas.
+      thresholds: { lines: 90, branches: 75 },
     },
   },
 });
