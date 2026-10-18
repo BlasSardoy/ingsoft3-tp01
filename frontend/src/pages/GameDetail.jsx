@@ -22,7 +22,6 @@ export default function GameDetail() {
   // Estado del formulario de MI reseña
   const [miPuntaje, setMiPuntaje] = useState(0);
   const [miComentario, setMiComentario] = useState("");
-  const [miFoto, setMiFoto] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState("");
 
@@ -42,7 +41,6 @@ export default function GameDetail() {
       if (mia) {
         setMiPuntaje(mia.rating);
         setMiComentario(mia.comment || "");
-        setMiFoto(mia.photo_url || "");
       }
     } catch (err) {
       setError(err.message);
@@ -66,11 +64,7 @@ export default function GameDetail() {
     setGuardando(true);
     setErrorForm("");
     try {
-      await api.upsertReview(
-        id,
-        { rating: miPuntaje, comment: miComentario, photo_url: miFoto },
-        token
-      );
+      await api.upsertReview(id, { rating: miPuntaje, comment: miComentario }, token);
       await cargar(); // recarga para ver el promedio actualizado
     } catch (err) {
       setErrorForm(err.message);
@@ -103,9 +97,6 @@ export default function GameDetail() {
 
       {/* ---------------- Ficha del juego ---------------- */}
       <section className="game-header card">
-        {game.image_url && (
-          <img className="game-header__cover" src={game.image_url} alt={game.title} />
-        )}
         <span className="badge">{game.category}</span>
         <h1>{game.title}</h1>
         <p className="muted">{game.platform}</p>
@@ -139,13 +130,6 @@ export default function GameDetail() {
               onChange={(e) => setMiComentario(e.target.value)}
               rows={3}
             />
-            <input
-              type="url"
-              className="review-form__photo"
-              placeholder="URL de una foto para tu reseña (opcional)"
-              value={miFoto}
-              onChange={(e) => setMiFoto(e.target.value)}
-            />
             <button className="btn btn--primary" type="submit" disabled={!puedeEnviar}>
               {guardando ? "Guardando…" : "Guardar reseña"}
             </button>
@@ -173,9 +157,6 @@ export default function GameDetail() {
               <StarRating value={r.rating} readOnly size={14} />
             </header>
             <p>{r.comment}</p>
-            {r.photo_url && (
-              <img className="review__photo" src={r.photo_url} alt="Foto de la reseña" />
-            )}
             <button className="btn btn--ghost btn--small" onClick={() => borrarResena(r.id)}>
               Borrar
             </button>
@@ -189,9 +170,6 @@ export default function GameDetail() {
               <StarRating value={r.rating} readOnly size={14} />
             </header>
             <p>{r.comment}</p>
-            {r.photo_url && (
-              <img className="review__photo" src={r.photo_url} alt="Foto de la reseña" />
-            )}
 
             {/* Sólo el admin puede borrar reseñas ajenas (REGLA 6) */}
             {user?.role === "admin" && (

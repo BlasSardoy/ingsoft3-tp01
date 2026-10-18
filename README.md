@@ -187,8 +187,6 @@ evidencias.md                 capturas y salidas que respaldan cada entrega
 4. Un usuario tiene como máximo **una** reseña por juego: volver a enviarla la actualiza.
 5. Sólo un admin puede crear o borrar juegos del catálogo.
 6. Sólo el autor de una reseña (o un admin) puede borrarla.
-7. La foto de un juego y la foto de una reseña son opcionales, pero si vienen tienen que ser una
-   URL `http(s)` válida.
 
 **Frontend**:
 
