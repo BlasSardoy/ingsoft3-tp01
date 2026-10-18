@@ -180,3 +180,23 @@ puntaje/comentario/foto actualiza la fila existente en vez de crear una nueva. V
 inválida/vacía, upsert de reseña con foto) y prueba manual en el navegador.
 
 **Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
+
+### Cambio: tema visual neon/cyberpunk
+
+**Qué se agregó:** rediseño de `styles.css` únicamente — paleta oscura con acentos magenta y
+cian con glow (box-shadow / text-shadow), manteniendo los mismos nombres de variables CSS, las
+mismas clases y la misma estructura de componentes. No se tocó ningún `.jsx`.
+
+**Por qué así:** cambiar sólo los *valores* de las variables (`--amber`, `--teal`, `--cream`, etc.)
+en vez de reescribir selectores reduce el riesgo de romper el layout: todo lo que ya usaba esas
+variables (badges, botones, estrellas, bordes de "mi reseña") hereda la paleta nueva sin tocarlo.
+La ficha de juego, que antes era una tarjeta clara tipo "cartucho de papel", pasa a ser un panel
+oscuro con borde que se ilumina en cian al pasar el mouse — mismo lenguaje de "cartucho" (la
+muesca arriba), estética distinta.
+
+**Cómo se verificó:** reconstruí el contenedor del frontend y usé Playwright (headless, instalado
+aparte, no es una dependencia del proyecto) para navegar catálogo, detalle de juego, acceso y panel
+de administrador, con capturas de cada pantalla. Revisé que no hubiera errores de consola más allá
+de imágenes de prueba que no resuelven (URLs falsas usadas sólo para probar, no es un bug real).
+
+**Link al PR:** _(completar al abrir el PR)_
