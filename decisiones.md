@@ -145,58 +145,62 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 # Decisiones TP5
 --------------------------------------------
 
-> Esta sección se va completando a medida que avanza el trabajo. Los borradores de cada entrada
-> los propone la IA; quedan para reescribirlos con mis propias palabras antes de la defensa.
+> Esta sección sigue la estructura que pide el brief del TP5, no un registro por PR. Los
+> borradores de cada respuesta los propone la IA; quedan para reescribirlos con mis propias
+> palabras antes de la defensa.
 
-## PR 0 — Ajustes a la app antes de los tests
+## Reglas agregadas antes de testear (PR 0)
 
-### Cambio: foto del juego y foto de la reseña (URL)
+REGLA 7 — la foto de un juego (`games.image_url`) y la foto de una reseña (`reviews.photo_url`)
+son opcionales, pero si vienen tienen que ser una URL `http(s)` válida. Se agregó para tener una
+regla de negocio nueva con casos de test claros (válida / sin protocolo / vacía) antes de escribir
+la suite — el resto del PR 0 (migración de columnas con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`,
+edición de reseña ya existente vía el upsert que ya tenía la REGLA 4) no agrega reglas nuevas.
+PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
 
-**Qué se agregó:** dos columnas opcionales, `games.image_url` y `reviews.photo_url`, y una regla
-de negocio nueva (REGLA 7): si la URL viene, tiene que empezar con `http://` o `https://`; si no
-viene, no pasa nada (campo opcional). Se valida en `POST /api/games` y en el upsert de
-`POST /api/games/:id/reviews`.
+El tema visual (PR #26, https://github.com/BlasSardoy/ingsoft3-tp01/pull/26) es un cambio estético
+sin reglas de negocio asociadas — no se registra acá.
 
-**Por qué esta regla y no otra:** no se valida que la imagen exista de verdad del otro lado (eso
-pediría salir a la red desde el backend, o subir archivos reales — se evaluó y se descartó para
-no sumar una dependencia nueva como `multer` ni un volumen nuevo). La validación de formato alcanza
-para dar un error claro (400) en vez de guardar basura, y da un caso de test lindo: URL válida,
-URL sin protocolo (inválida), y campo vacío (válido, por opcional).
+## Qué lógica testeé y por qué ésa
 
-**Migración:** las columnas se agregan con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` en
-`db.js`, aparte del `CREATE TABLE IF NOT EXISTS` del esquema original. `CREATE TABLE IF NOT EXISTS`
-no las hubiera sumado a un volumen ya existente (el `db_data` que ya estaba corriendo con el
-esquema viejo); el `ALTER` sí corre sobre un volumen existente sin perder datos, y no hace nada si
-las columnas ya están (por eso también es `IF NOT EXISTS`). Probado localmente: reinicié el backend
-sobre el volumen con datos previos y las columnas aparecieron solas, sin recrear nada.
+_(se completa en el PR 1 y el PR 2)_
 
-**Editar una reseña ya existente:** no fue necesario tocar código — la REGLA 4 (una reseña por
-usuario y juego, con upsert sobre `ON CONFLICT`) ya cubría el caso: reenviar el formulario con otro
-puntaje/comentario/foto actualiza la fila existente en vez de crear una nueva. Verificado con
-`curl`: dos `POST` seguidos a la misma reseña devuelven el mismo `id` y el juego queda con
-`review_count: 1`.
+## Mi stack contra la tabla «Tu stack, de un vistazo»
 
-**Cómo se verificó:** `curl` contra los tres endpoints tocados (alta de juego con URL válida/
-inválida/vacía, upsert de reseña con foto) y prueba manual en el navegador.
+_(se completa en el PR 1 y el PR 2)_
 
-**Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/25
+## Refactor para poder mockear
 
-### Cambio: tema visual neon/cyberpunk
+_(se completa en el PR 1 y el PR 2)_
 
-**Qué se agregó:** rediseño de `styles.css` únicamente — paleta oscura con acentos magenta y
-cian con glow (box-shadow / text-shadow), manteniendo los mismos nombres de variables CSS, las
-mismas clases y la misma estructura de componentes. No se tocó ningún `.jsx`.
+## Umbral
 
-**Por qué así:** cambiar sólo los *valores* de las variables (`--amber`, `--teal`, `--cream`, etc.)
-en vez de reescribir selectores reduce el riesgo de romper el layout: todo lo que ya usaba esas
-variables (badges, botones, estrellas, bordes de "mi reseña") hereda la paleta nueva sin tocarlo.
-La ficha de juego, que antes era una tarjeta clara tipo "cartucho de papel", pasa a ser un panel
-oscuro con borde que se ilumina en cian al pasar el mouse — mismo lenguaje de "cartucho" (la
-muesca arriba), estética distinta.
+_(se completa en el PR 3)_
 
-**Cómo se verificó:** reconstruí el contenedor del frontend y usé Playwright (headless, instalado
-aparte, no es una dependencia del proyecto) para navegar catálogo, detalle de juego, acceso y panel
-de administrador, con capturas de cada pantalla. Revisé que no hubiera errores de consola más allá
-de imágenes de prueba que no resuelven (URLs falsas usadas sólo para probar, no es un bug real).
+## Qué quedó fuera de la cuenta
 
-**Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/26
+_(se completa en el PR 1 y el PR 2)_
+
+## Coverage alto no garantiza calidad
+
+_(se completa cuando se corrija — o no — el hallazgo de `validarRating` con `2.5`)_
+
+## Etapa de tests del backend
+
+_(se completa en el PR 3)_
+
+## PR bloqueado
+
+_(se completa en el PR 4 y el PR 5)_
+
+## Ejercicio del camino sin cubrir
+
+_(se completa en el PR 4 o el PR 5, con el reporte HTML de coverage)_
+
+## Problemas encontrados
+
+_(se va completando a medida que aparecen)_
+
+## Declaración de uso de IA
+
+_(se completa al cierre, con qué hizo Claude Code, qué hizo Blas, y cómo se verificó cada parte)_
