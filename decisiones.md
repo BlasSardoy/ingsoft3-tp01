@@ -199,4 +199,4 @@ aparte, no es una dependencia del proyecto) para navegar catálogo, detalle de j
 de administrador, con capturas de cada pantalla. Revisé que no hubiera errores de consola más allá
 de imágenes de prueba que no resuelven (URLs falsas usadas sólo para probar, no es un bug real).
 
-**Link al PR:** _(completar al abrir el PR)_
+**Link al PR:** https://github.com/BlasSardoy/ingsoft3-tp01/pull/26
