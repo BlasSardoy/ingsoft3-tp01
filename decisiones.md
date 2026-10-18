@@ -165,7 +165,7 @@ REGLA 4 (una reseña por usuario y juego) queda **fuera** de la suite: vive en e
 del SQL y en el `UNIQUE` de la tabla (`db.js`), no en código JavaScript — es terreno de
 integración (probarla de verdad exige una base real), no unitario.
 
-Link a la corrida con la suite verde (back + front, 47 tests): _(completar con el run del PR 3)_
+Link a la corrida con la suite verde (back + front, 47 tests): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
 ## Umbral de coverage
 
@@ -183,7 +183,7 @@ ejercitan a propósito (la de `requireAdmin`) o las del `catch` genérico de cad
 `throw err;` que recae en el 500 del handler, no testeado porque no es una regla de negocio,
 es el camino "la base explotó por algo que no previ").
 
-Link a la corrida con el Summary: _(completar con el run del PR 3)_
+Link a la corrida con el Summary (coverage de los dos lados, publicado y descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
 ## Qué quedó fuera de la cuenta de cobertura
 
