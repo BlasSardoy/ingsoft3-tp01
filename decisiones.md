@@ -145,199 +145,120 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 # Decisiones TP5
 --------------------------------------------
 
-> Esta sección responde exactamente las preguntas que pide 05-testing-calidad.md (sección
-> "Trabajo Práctico 05 › Entregables"), no un registro por PR. Cada link va pegado a la decisión
-> que prueba.
+## Qué lógica elegiste testear y por qué ESA (¿dónde duele un bug en tu app?)
 
-## Qué lógica elegí testear y por qué ésa
+Testeé las reglas de negocio de GameRate, que es donde un bug le pega directo al usuario:
 
-Backend: las REGLA 1 (contraseña ≥ 6 y campos obligatorios), REGLA 2 (rating 1-5, entero),
-REGLA 3 (usuario/email único), REGLA 5 (sólo admin crea/borra juegos) y REGLA 6 (sólo el dueño
-o un admin borra una reseña) — 25 métodos de test (34 casos, contando cada fila de `it.each`)
-repartidos sobre esas reglas más los servicios que las rodean. Elegí ésas porque son donde un bug duele de verdad: un usuario borrando reseñas ajenas,
-o un usuario cualquiera dándose de alta como si fuera admin desde el cliente (la REGLA 5 se
-aplica en el backend aunque el botón esté escondido en el front, por eso el middleware se
-testea directo). Frontend: las mismas tres técnicas sobre `puedeEnviarAcceso`,
-`puedeEnviarResena`, `puedeGuardarJuego` y `estrellasLlenas`, más el cliente HTTP (`request`).
+- **REGLA 1** (contraseña de 6+ caracteres y campos obligatorios): si falla, se crean cuentas inválidas.
+- **REGLA 2** (rating entero de 1 a 5): si falla, entran puntajes como `2.5` o `"abc"` y la API devuelve 500 en vez de 400.
+- **REGLA 3** (usuario/email único): si falla, dos personas quedan con la misma cuenta.
+- **REGLA 5** (sólo admin crea/borra juegos): si falla, cualquier usuario borra el catálogo. Se aplica en el backend aunque el botón esté escondido en el front, por eso el middleware se testea directo.
+- **REGLA 6** (sólo el dueño o un admin borra una reseña): si falla, un usuario borra reseñas ajenas.
 
-REGLA 4 (una reseña por usuario y juego) queda **fuera** de la suite: vive en el `ON CONFLICT`
-del SQL y en el `UNIQUE` de la tabla (`db.js`), no en código JavaScript — es terreno de
-integración (probarla de verdad exige una base real), no unitario.
+Backend: 25 métodos de test (34 casos contando cada fila de `it.each`). Frontend: 10 métodos (19 casos) sobre `puedeEnviarAcceso`, `puedeEnviarResena`, `puedeGuardarJuego`, `estrellasLlenas`, `etiquetaDePuntaje` y el cliente HTTP `request`.
 
-Hoy, en `main`: backend 25 métodos / 34 casos, frontend 10 métodos / 19 casos (los números
-de abajo cuentan métodos, que es lo que pide la consigna; los casos son las filas de `it.each`).
+La **REGLA 4** (una reseña por usuario y juego) queda afuera: vive en el `UNIQUE` y el `ON CONFLICT` de la base, no en código JavaScript. Probarla exige una base real, así que es un test de integración.
 
-Link a la corrida con la suite verde (back + front): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
+Corrida con la suite verde: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
-## Umbral de coverage
+## Tu umbral de coverage: el número, sobre qué métrica y por qué ése — y el número de rama que te da hoy
 
-El umbral va sobre las **dos** métricas, líneas y ramas, en los dos lados.
+El umbral va sobre **líneas y ramas**, en los dos lados:
 
-**Backend**: `lines: 85`, `branches: 75`. Lo fijé con la medición del PR 3 (90.11% líneas,
-79.24% ramas), unos puntos abajo de cada número para que no se rompa por una fluctuación chica
-pero sí si baja de verdad. **Hoy, en `main`, mide 92.83% líneas y 84.21% ramas**: subió porque
-después agregué los tests de `authenticate` (el ejercicio del camino sin cubrir). Lo que queda
-sin cubrir en ramas está en `servicios/juegos.js` (66.66% de ramas: el listado y el detalle del
-juego con sus reseñas) y en el `throw err;` del `catch` genérico de cada servicio, que recae en
-el 500 del handler — no lo testeo porque no es una regla de negocio, es el camino "la base
-explotó por algo que no preví".
+| | Umbral (líneas / ramas) | Hoy en `main` (líneas / ramas) |
+|---|---|---|
+| Backend | 85% / 75% | 92.83% / 84.21% |
+| Frontend | 90% / 75% | 97.58% / 86.95% |
 
-**Frontend**: `lines: 90`, `branches: 75`. Lo fijé con la medición del PR 3 (97.5% líneas,
-82.35% ramas). **Hoy mide 97.58% líneas y 86.95% ramas.** Acá la cobertura es más alta porque
-`src/lib/**` son funciones puras chicas, sin ramas de manejo de errores de infraestructura como
-las que sí tiene el backend. Lo que falta está en `api.js` (71.42% de ramas): el armado del query
-string de `listGames` (líneas 63-65) y los atajos del objeto `api`, que son pegamento
-de una línea sobre `request` — `request` en sí está testeado.
+**Por qué esos números:** los fijé unos puntos abajo de lo que medía cuando armé la suite (backend 90.11% / 79.24%, frontend 97.5% / 82.35%), para que no se rompa por una fluctuación chica pero sí cuando entra código nuevo sin tests. Puse ramas además de líneas porque la de líneas puede dar 100% con un `if` recorrido por un solo camino.
 
-**Por qué no lo subí aunque ahora tenga margen**: con 7-8 puntos de holgura el umbral sigue
-frenando un archivo nuevo de tamaño normal sin tests (el PR 5 lo prueba: un solo archivo bajó
-el backend a 81.84%). Subirlo a 90/80 en el back sería posible, pero me obligaría a testear el
-`catch` genérico o el detalle de juegos, que hoy son terreno de integración (TP7), no de reglas.
-Para subirlo habría que primero testear `obtenerJuego` con reseñas y el listado de `juegos.js`.
+**Por qué no lo subí aunque hoy haya margen:** con esa holgura el umbral igual frena un archivo nuevo sin tests (el PR que dejé abierto bajó el backend a 81.84% con un solo archivo). Para subirlo a 90/80 en el backend tendría que testear lo que hoy queda sin cubrir: el listado y el detalle de juegos en `servicios/juegos.js` (66.66% de ramas) y el `catch` genérico de cada servicio, que no es una regla de negocio sino "la base falló por algo que no preví". En el frontend lo que falta es el armado del query string de `listGames` en `api.js`.
 
-Link a la corrida con el Summary (coverage de los dos lados, publicado y descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
+Summary con el coverage de los dos lados (y el reporte descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
-**Prueba de que el freno funciona de verdad**: antes de mergear este PR, comenté a propósito
-los 4 tests de `juegos.test.js` (`it.skip`) en esta misma rama. La cobertura de líneas del
-backend cayó a 77.19% — debajo del umbral de 85% — y el job se puso en rojo con
-`ERROR: Coverage for lines (77.19%) does not meet global threshold (85%)`:
-https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155760336. Después revertí el
-`it.skip` y la corrida siguiente volvió a verde.
+## Qué dejaste afuera de la cuenta de cobertura, backend y frontend, y por qué cada cosa
 
-## Qué quedó fuera de la cuenta de cobertura
+**Backend** (`exclude` en `vitest.config.js`; todo lo demás de `src/` entra solo):
+- `src/index.js`: el arranque, cablea Express. No tiene reglas.
+- `src/seed.js`: datos de ejemplo.
+- `src/db.js`: el esquema SQL, terreno de integración.
+- `src/routes/**`: las rutas sólo reciben el pedido, llaman al servicio y responden. Las pude excluir porque **antes** saqué toda su lógica a `reglas.js` y `servicios/**`; si la hubiera dejado ahí, excluirlas sería esconder código sin testear.
 
-**Backend**: `src/index.js` (arranque, cablea Express), `src/seed.js` (datos de ejemplo),
-`src/db.js` (el esquema SQL, terreno de integración) y `src/routes/**` — este último se pudo
-excluir porque **primero** se sacó toda la lógica que tenía (los obligatorios de
-`POST /games`, el 404 de juego/reseña inexistente, la traducción del 23503, la comparación de
-credenciales del login) a `src/reglas.js` y `src/servicios/**`; si algo de eso se hubiera
-quedado en la ruta, excluir `routes/**` habría sido esconder código sin testear, no medir lo
-que importa.
+**Frontend** (`include` en `vite.config.js`): sólo entran `src/lib/**` y `src/api.js`. Quedan afuera los componentes y las páginas, que son UI y se verifican con e2e en el TP7.
 
-**Frontend**: todo lo que no es `src/lib/**` ni `src/api.js` — components y pages, que se
-verifican con e2e en el TP7 (ahí sí importa el DOM, acá los tests son sin DOM a propósito).
+## Por qué coverage alto no garantiza calidad (con TU ejemplo)
 
-## Por qué coverage alto no garantiza calidad
+`validarRating` tenía `!rating || rating < 1 || rating > 5`. Esa línea estaba 100% cubierta por los tests que probaban 0 y 6, pero la regla dejaba pasar `"abc"` y `2.5`. La base los rechazaba recién al guardarlos y la API respondía 500 en vez de 400. El coverage marcaba la línea como cubierta porque se ejecutó, no porque la regla estuviera bien. Lo corregí con `Number.isInteger` y agregué `2.5` al test parametrizado, que antes del arreglo daba rojo.
 
-El ejemplo propio: `validarRating` tenía `!rating || rating < 1 || rating > 5`. Esa línea
-estaba 100% cubierta por los tests que probaban 0 y 6 — y la regla igual dejaba pasar `"abc"`
-y `2.5`, que JavaScript no rechaza con ese chequeo. Recién la base los rechazaba al convertir a
-`SMALLINT`, así que la API respondía 500 en vez de 400: un bug real, invisible para el
-coverage, porque coverage mide que la línea se ejecutó, no que la regla esté bien escrita. Lo
-corregí con `Number.isInteger` (PR 1) y agregué el caso `2.5` al test parametrizado, que antes
-del fix se ponía en rojo.
+## Tu Pull Request bloqueado: qué check se puso en rojo, en qué métrica, por qué, y qué escribiste para arreglarlo
 
-## Mi Pull Request bloqueado
+**Primer PR (la secuencia completa):** agregué `etiquetaDePuntaje` en `frontend/src/lib/etiquetas.js`, una función con cuatro caminos y sin tests. Compilaba y todos los tests pasaban, pero el check **`build-frontend`** se puso en rojo por **líneas**:
 
-El PR 4 agrega `frontend/src/lib/etiquetas.js` (función `etiquetaDePuntaje`) sin ningún test: una función con cuatro
-caminos (sin reseñas / mixto / bien valorado / aclamado) que compila perfecto y no rompe nada.
-El check `build-frontend` se puso en rojo, en la métrica **líneas** (82.25% medido, contra el
-umbral de 90%), con vitest 3: `ERROR: Coverage for lines (82.25%) does not meet global
-threshold (90%)`. El paso `Construir la imagen del frontend` (el build normal) y el de
-`Construir la etapa de tests` compilaron los dos sin problema — lo que frenó fue sólo el paso de
-coverage, no la compilación: es la prueba de que éste es el gate del TP5 y no el del TP4.
+```
+ERROR: Coverage for lines (82.25%) does not meet global threshold (90%)
+```
 
-(En la descripción del PR figura una estimación previa, 84.17%; el número que vale es el del
-log de la corrida, 82.25%, que es lo que midió vitest en el contenedor del pipeline.)
+Para arreglarlo escribí un test parametrizado (`it.each`) con un caso por cada camino de la función. La cobertura volvió arriba del umbral, el check pasó a verde y lo mergeé.
 
-Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156227929
-PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/32
+- Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156227929
+- PR mergeado: https://github.com/BlasSardoy/ingsoft3-tp01/pull/32
 
-Para arreglarlo escribí un test por cada camino de `etiquetaDePuntaje` (parametrizado,
-`it.each`), con lo que la cobertura volvió a estar arriba del umbral.
+**Segundo PR (el freno vigente, abierto hasta la defensa):** agregué `backend/src/formato.js` sin tests. El check **`build-backend`** quedó en rojo por **líneas**:
 
-**El freno vigente (PR 5, no se toca hasta la defensa).** Mismo ejercicio del lado del
-backend: `backend/src/formato.js` (`clasificarCatalogo`, `resumenDeResenas`), sin tests. El
-check `build-backend` se puso en rojo en la métrica **líneas** (81.84% medido, contra el umbral
-de 85%): `ERROR: Coverage for lines (81.84%) does not meet global threshold (85%)`. (La
-descripción del PR dice 83.28%, que era una estimación hecha antes de correrlo; vale el log.) A
-diferencia del PR 4, este PR **queda abierto y en rojo**: `mergeStateStatus: BLOCKED` lo
-confirma — GitHub no deja mergearlo aunque yo sea el dueño del repo.
+```
+ERROR: Coverage for lines (81.84%) does not meet global threshold (85%)
+```
 
-Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156607976
-PR (abierto): https://github.com/BlasSardoy/ingsoft3-tp01/pull/33
+- Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156607976
+- PR abierto: https://github.com/BlasSardoy/ingsoft3-tp01/pull/33
 
-## Refactor para poder mockear
+En los dos casos frenó por líneas, no por ramas — pero las ramas también bajaron, no es que una función sin uso no sume ninguna: de 82.35% a 77.77% en el front, de 79.24% a 77.77% en el back. Lo que pasó es que ninguna de las dos cruzó su propio umbral (75%), mientras que las líneas sí cruzaron el suyo (90% y 85%). El umbral de ramas tenía más margen que el de líneas en los dos lados.
 
-Antes, `registrarUsuario` y `borrarResena` (y el resto de los handlers) importaban `pool`
-directamente adentro del archivo de rutas — no había forma de reemplazarlo por un doble desde
-un test sin pegarle a una base de verdad. El refactor del PR 1 movió esa lógica a
-`src/servicios/{usuarios,resenas,juegos}.js`, donde cada función recibe `db` **por parámetro**
-en vez de importar `pool`; quien la llama decide qué le pasa (la app real le pasa el pool de
-verdad, el test le pasa un objeto falso con un `.query` controlado). Lo mismo del lado del
-front: `request` en `api.js` recibe `fetchFn` por parámetro (`fetch` por defecto), así el test
-le pasa un `vi.fn()` en vez de salir a la red.
+## Si refactorizaste para poder mockear: qué cambiaste y por qué no se podía testear antes
 
-Link al PR 1: https://github.com/BlasSardoy/ingsoft3-tp01/pull/29
-Link al PR 2: https://github.com/BlasSardoy/ingsoft3-tp01/pull/30
+Antes, la lógica estaba adentro de las rutas e importaba `pool` (la conexión a PostgreSQL) directamente. No había forma de reemplazar la base por un doble desde un test.
 
-## Mi stack contra la tabla «Tu stack, de un vistazo»
+La moví a `src/servicios/{usuarios,resenas,juegos}.js`, donde cada función recibe `db` **por parámetro**. La app real le pasa el `pool`; el test le pasa un objeto falso con un `query: vi.fn()`. Así puedo verificar la interacción, por ejemplo que borrar una reseña ajena llama a la base una sola vez (el `SELECT`) y nunca llega al `DELETE`.
 
-GameRate no es el stack de la cátedra (.NET + vitest): el backend es Node 22 + Express
-(CommonJS), no .NET — pero se usa **vitest 3** en los dos lados igual, así que la fila del
-medidor de cobertura y la del umbral son las mismas que la guía. Parametrizado: `it.each`
-(igual que en vitest de la guía). Doble: `vi.fn()` (no hay Moq porque no hay .NET). Dónde
-viven los tests: al lado del código (`algo.test.js`), como en cualquier proyecto JS/TS — no
-hay carpeta de tests aparte, porque ni CommonJS ni vitest la piden. Qué entra en la cuenta:
-`include`/`exclude` de `coverage` en `vitest.config.js`/`vite.config.js` (el backend excluye,
-el frontend sólo incluye). Etapa de tests: `npm ci` **sin** `--omit=dev` en una etapa propia del
-Dockerfile, ni `FROM deps` (que instaló sin devDependencies) ni `FROM build` del backend (no
-existe esa etapa ahí) — el frontend sí puede `FROM build AS test` porque esa etapa ya tiene
-Node y todas las dependencias.
+En el frontend hice lo mismo: `request` en `api.js` recibe `fetchFn` por parámetro (`fetch` por defecto), y el test le pasa un `vi.fn()` en vez de salir a la red.
+
+- Refactor del backend: https://github.com/BlasSardoy/ingsoft3-tp01/pull/29
+- Refactor del frontend: https://github.com/BlasSardoy/ingsoft3-tp01/pull/30
+
+## Si tu stack no es el de la cátedra (.NET + vitest): qué herramienta usaste para cada fila de la tabla «Tu stack, de un vistazo»
+
+El backend es Node 22 + Express, no .NET. Uso vitest en los dos lados.
+
+| Lo que tenés que lograr | Backend (Node + Express) | Frontend (React + Vite) |
+|---|---|---|
+| Dónde viven los tests | Al lado del código, `algo.test.js` | Al lado del código, `algo.test.js` |
+| Un test parametrizado | `it.each` | `it.each` |
+| Que la dependencia entre desde afuera | `db` como parámetro de cada servicio | `fetchFn` como parámetro de `request` |
+| Fabricar el doble | `vi.fn()` | `vi.fn()` |
+| Medir la cobertura | `vitest run --coverage` con `@vitest/coverage-v8` | Igual |
+| Un umbral que rompe el build | `coverage.thresholds` en `vitest.config.js` | `coverage.thresholds` en `vite.config.js` |
+| Qué entra en la cuenta | `include: src/**` + `exclude` | `include` |
+| Reporte legible | Reporter `html` y `json-summary` (para el Summary) | Igual |
+| Herramientas de test en la etapa de tests del Dockerfile | Etapa `test` propia con `npm ci` sin `--omit=dev` (la etapa `deps` instala sin devDependencies) | `FROM build AS test`, que ya tiene todas las dependencias |
 
 ## El ejercicio del camino sin cubrir
 
-Abrí el reporte de coverage del backend (`backend/coverage/lcov-report/src/middleware/auth.js.html`,
-y el detalle por rama en `coverage/lcov.info`) y encontré dos ramas sin ejercitar en
-`authenticate` (`backend/src/middleware/auth.js`, línea 24 y línea 26-28): el `? :` que separa
-el token del prefijo `"Bearer "` nunca tomaba el camino verdadero, y el `if (!token)` nunca
-caía al "token SÍ está presente, seguí". **Qué entrada las recorrería**: cualquier pedido con
-el header `Authorization: Bearer <algo>` — hasta ese momento, los únicos tests de `authenticate`
-mandaban la request **sin** ese header, así que todo el resto de la función (¿el token es
-válido? ¿inválido?) quedaba sin ejercitar.
+1. **Qué línea era:** en `backend/src/middleware/auth.js`, función `authenticate`, la línea 24 (`header.startsWith("Bearer ") ? header.slice(7) : null`) y el `if (!token)` de la 26. Ningún test tomaba el camino "sí hay token".
+2. **Qué entrada la recorre:** un pedido con el header `Authorization: Bearer <algo>`. Los tests que había mandaban el pedido sin ese header.
+3. **Qué decidí:** agregarlos. Escribí dos tests: uno con un token válido (llama a `next()` y completa `req.user`) y otro con un token inválido (responde 401). Con eso `auth.js` pasó de 60% a 100% de ramas.
 
-**Qué decidí**: agregarlos. Son baratos (dos tests más en `auth.test.js`) y cierran un hueco
-real — antes nadie probaba que un token válido deja pasar (`next()` + `req.user` completo) ni
-que uno con formato de JWT pero inválido responde 401 igual que la ausencia de token. Con eso,
-`auth.js` pasó de 60% a 100% de ramas.
+## Problemas encontrados y cómo los resolviste
 
-## Problemas encontrados
-
-- Corriendo `docker run -e COVERAGE_DIR=/salida/reporte ...` desde Git Bash en Windows, la ruta
-  `/salida/reporte` se traducía sola a una ruta de Windows (mangling de MSYS) antes de llegarle
-  al contenedor, y vitest fallaba con "No test files found" interpretando el pedazo mangleado
-  como un filtro de archivos. Se resolvía con `MSYS_NO_PATHCONV=1` antes del `docker run` — sólo
-  hace falta para probar la receta a mano en Windows; en el pipeline (Linux) no pasa.
-
-- Para el ejercicio del camino sin cubrir, el reporte HTML del provider `v8` de vitest no marca
-  el `?.` de forma tan visual como describe la guía (pensada para ReportGenerator de .NET): la
-  línea aparece "cubierta" aunque uno de sus caminos no lo esté. Lo que sí tiene el detalle
-  exacto es `coverage/lcov.info` (las líneas `BRDA:<línea>,<bloque>,<rama>,<veces>`): ahí se ve,
-  rama por rama, cuántas veces corrió cada una — 0 veces es la que falta.
+- **El reporte HTML no marca bien las ramas:** el reporte de vitest muestra la línea como cubierta aunque uno de sus caminos no lo esté. El detalle real está en `coverage/lcov.info`, en las líneas `BRDA`, que dicen cuántas veces corrió cada rama; la que dice 0 es la que falta.
+- **Git Bash en Windows rompía el `docker run`:** al probar el comando a mano, Git Bash convertía `/salida/reporte` en una ruta de Windows y vitest decía "No test files found". Se resuelve con `MSYS_NO_PATHCONV=1` antes del comando. En el pipeline (Linux) no pasa.
 
 ## Declaración de uso de IA
 
-**Qué hizo Claude Code**: escribió el refactor de inyección de dependencias (`reglas.js` +
-`servicios/**`), los 47 tests (backend y frontend), las etapas `test` de los Dockerfiles, los
-pasos nuevos de `ci.yml`, y propuso los umbrales a partir de la medición real. También escribió
-los borradores de este archivo.
+Usé Claude Code para escribir el refactor de inyección de dependencias, los tests de backend y frontend, las etapas `test` de los Dockerfiles y los pasos nuevos del `ci.yml`, y para proponer los umbrales a partir de la medición real.
 
-**Qué hizo Blas**: decidió corregir el bug de `validarRating` en vez de dejarlo documentado sin
-tocar; decidió sacar la feature de fotos (PR 25) después de probarla y encontrarle un problema
-real de validación, en vez de parchearla; revisó y mergeó cada PR; reescribió esta sección con
-sus palabras.
-
-**Cómo se verificó** (no "se resolvió con la IA" — esto, concretamente):
-- Cada endpoint tocado por el refactor del PR 1, probado con `curl` contra la app corriendo en
-  Docker, comparando el mismo comportamiento HTTP de antes y después.
-- Mutantes a mano: invertir `||` por `&&`, correr un borde de `>` a `>=` en las reglas que más
-  importan (`validarRating`, `puedeBorrarResena` en el back; `puedeEnviarResena`,
-  `puedeEnviarAcceso` en el front) y confirmar que algún test se ponía en rojo — documentado en
-  los PRs 1 y 2.
-- El freno probado de verdad, dos veces: comentando tests a propósito en una rama (PR 3) y con
-  el PR 4/5, viendo el job ponerse rojo con el mensaje exacto de vitest y el merge bloqueado
-  (`mergeStateStatus: BLOCKED`), no sólo imaginando que iba a pasar.
-- El ejercicio del camino sin cubrir se hizo leyendo `coverage/lcov.info` línea por línea, no
-  asumiendo dónde estaba el hueco.
-- La app completa, a mano en el navegador (Playwright) después de cada refactor grande, antes
-  de abrir el PR.
+Lo verifiqué así:
+- Probé cada endpoint tocado por el refactor con `curl` contra la app en Docker, antes y después, comparando las respuestas.
+- Hice mutantes a mano: invertí `||` por `&&` y corrí bordes de `>` a `>=` en `validarRating`, `puedeBorrarResena`, `puedeEnviarResena` y `puedeEnviarAcceso`, y confirmé que algún test se ponía en rojo.
+- Vi el freno funcionar de verdad en los dos PRs, con el mensaje exacto de vitest y el merge bloqueado.
+- Hice el ejercicio del camino sin cubrir leyendo yo el `lcov.info`.
+- Probé la app completa en el navegador después de cada refactor grande.
