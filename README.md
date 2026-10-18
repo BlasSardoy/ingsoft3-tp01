@@ -121,6 +121,22 @@ npm run dev                   # http://localhost:5173 — Vite proxea /api al ba
 
 ---
 
+## Tests y cobertura
+
+Backend y frontend usan **vitest 3** (`@vitest/coverage-v8`). En Windows, correr siempre con
+`--run` (sin eso, `vitest` queda escuchando cambios y no vuelve a la terminal):
+
+```bash
+cd backend   # o frontend
+npm test -- --run --coverage
+```
+
+`npm run test:ci` existe para el **contenedor** (el pipeline la corre adentro del Dockerfile, en
+Linux): usa `${COVERAGE_DIR:-coverage}`, una sintaxis de shell que PowerShell no expande, así que
+en Windows el reporte caería en una carpeta llamada literalmente `${COVERAGE_DIR:-coverage}`.
+
+---
+
 ## Variables de entorno
 
 El `.env` real **no se commitea** (está en `.gitignore`). Lo que sí está versionado es
@@ -145,14 +161,19 @@ escrita adentro.
 ```
 backend/
   src/
-    index.js            arranca Express, prepara la base y escucha
-    db.js               pool de PostgreSQL + creación del esquema
-    seed.js             admin y juegos de ejemplo
-    middleware/auth.js  verificación del JWT y chequeo de rol admin
-    routes/auth.js      registro y login
-    routes/games.js     catálogo (lectura pública, escritura sólo admin)
-    routes/reviews.js   alta/edición y borrado de reseñas
-  Dockerfile            multi-stage: dependencias → runtime
+    index.js               arranca Express, prepara la base y escucha
+    db.js                  pool de PostgreSQL + creación del esquema
+    seed.js                admin y juegos de ejemplo
+    reglas.js               reglas de negocio puras (sin pg ni Express) + sus tests
+    middleware/auth.js     verificación del JWT y chequeo de rol admin + sus tests
+    servicios/usuarios.js  registro y login: reciben "db" por parámetro + sus tests
+    servicios/resenas.js   alta/edición y borrado de reseñas + sus tests
+    servicios/juegos.js    alta, detalle y baja del catálogo
+    routes/auth.js         pegamento HTTP: registro y login
+    routes/games.js        pegamento HTTP: catálogo (lectura pública, escritura sólo admin)
+    routes/reviews.js      pegamento HTTP: reseñas
+  vitest.config.js        coverage de backend (provider v8, include/exclude, umbral)
+  Dockerfile              multi-stage: dependencias → runtime
   .dockerignore
 
 frontend/
@@ -182,7 +203,7 @@ evidencias.md                 capturas y salidas que respaldan cada entrega
 **Backend** (validadas en la API, y varias también como restricciones de la base):
 
 1. La contraseña debe tener al menos 6 caracteres.
-2. El puntaje de una reseña va de 1 a 5.
+2. El puntaje de una reseña es un **número entero** de 1 a 5 (`"abc"` o `2.5` se rechazan).
 3. Nombre de usuario y email son únicos.
 4. Un usuario tiene como máximo **una** reseña por juego: volver a enviarla la actualiza.
 5. Sólo un admin puede crear o borrar juegos del catálogo.

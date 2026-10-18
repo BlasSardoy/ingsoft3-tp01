@@ -5,6 +5,10 @@ obj/
 dist/
 build/
 npm-debug.log*
+
+# reportes de coverage (se generan al correr los tests)
+coverage/
+*-coverage/
 # secretos: NUNCA se versionan
 .env
 *.local
