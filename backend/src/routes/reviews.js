@@ -20,7 +20,7 @@ const router = express.Router();
 //                     volver a enviarla la ACTUALIZA, no la duplica.
 // ---------------------------------------------------------------------------
 router.post("/games/:id/reviews", authenticate, async (req, res) => {
-  const { rating, comment = "" } = req.body;
+  const { rating, comment = "", photo_url = "" } = req.body;
   const gameId = req.params.id;
 
   // REGLA 2 — validada acá y ADEMÁS en la base (CHECK rating BETWEEN 1 AND 5).
@@ -30,6 +30,12 @@ router.post("/games/:id/reviews", authenticate, async (req, res) => {
     return res.status(400).json({ error: "rating debe estar entre 1 y 5" });
   }
 
+  // REGLA DE NEGOCIO 7 (misma regla que en games.js): la foto es opcional,
+  // pero si viene tiene que ser una URL http(s) válida.
+  if (photo_url && !/^https?:\/\/.+/i.test(photo_url.trim())) {
+    return res.status(400).json({ error: "photo_url debe ser una URL http(s) válida" });
+  }
+
   try {
     // -----------------------------------------------------------------------
     // REGLA 4, implementada con "upsert":
@@ -37,19 +43,19 @@ router.post("/games/:id/reviews", authenticate, async (req, res) => {
     // Intenta insertar. Si choca con la restricción UNIQUE (game_id, user_id)
     // que declaramos en db.js, en vez de fallar ACTUALIZA la fila existente.
     //
-    // EXCLUDED es la fila que se intentó insertar. O sea: "poné el rating y el
-    // comentario nuevos sobre la reseña que este usuario ya tenía".
+    // EXCLUDED es la fila que se intentó insertar. O sea: "poné el rating, el
+    // comentario y la foto nuevos sobre la reseña que este usuario ya tenía".
     //
     // Hacerlo en UNA sola consulta evita la condición de carrera de
     // "primero busco si existe, después inserto o actualizo".
     // -----------------------------------------------------------------------
     const { rows } = await pool.query(
-      `INSERT INTO reviews (game_id, user_id, rating, comment)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO reviews (game_id, user_id, rating, comment, photo_url)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (game_id, user_id)
-       DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment
+       DO UPDATE SET rating = EXCLUDED.rating, comment = EXCLUDED.comment, photo_url = EXCLUDED.photo_url
        RETURNING *`,
-      [gameId, req.user.id, rating, comment]
+      [gameId, req.user.id, rating, comment, photo_url || null]
     );
 
     res.status(201).json(rows[0]);
