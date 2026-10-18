@@ -231,6 +231,16 @@ PR: https://github.com/BlasSardoy/ingsoft3-tp01/pull/32
 Para arreglarlo escribí un test por cada camino de `etiquetaDePuntaje` (parametrizado,
 `it.each`), con lo que la cobertura volvió a estar arriba del umbral.
 
+**El freno vigente (PR 5, no se toca hasta la defensa).** Mismo ejercicio del lado del
+backend: `backend/src/formato.js` (`clasificarCatalogo`, `resumenDeResenas`), sin tests. El
+check `build-backend` se puso en rojo en la métrica **líneas** (81.84% medido, contra el umbral
+de 85%): `ERROR: Coverage for lines (81.84%) does not meet global threshold (85%)`. A
+diferencia del PR 4, este PR **queda abierto y en rojo**: `mergeStateStatus: BLOCKED` lo
+confirma — GitHub no deja mergearlo aunque yo sea el dueño del repo.
+
+Corrida roja: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39156607976
+PR (abierto): https://github.com/BlasSardoy/ingsoft3-tp01/pull/33
+
 ## Refactor para poder mockear
 
 Antes, `registrarUsuario` y `borrarResena` (y el resto de los handlers) importaban `pool`
@@ -261,8 +271,19 @@ Node y todas las dependencias.
 
 ## El ejercicio del camino sin cubrir
 
-_(se completa en el PR 4 o el PR 5, con el reporte HTML de coverage: qué línea es, qué entrada la
-recorrería, y qué se decidió)_
+Abrí el reporte de coverage del backend (`backend/coverage/lcov-report/src/middleware/auth.js.html`,
+y el detalle por rama en `coverage/lcov.info`) y encontré dos ramas sin ejercitar en
+`authenticate` (`backend/src/middleware/auth.js`, línea 24 y línea 26-28): el `? :` que separa
+el token del prefijo `"Bearer "` nunca tomaba el camino verdadero, y el `if (!token)` nunca
+caía al "token SÍ está presente, seguí". **Qué entrada las recorrería**: cualquier pedido con
+el header `Authorization: Bearer <algo>` — hasta ese momento, los únicos tests de `authenticate`
+mandaban la request **sin** ese header, así que todo el resto de la función (¿el token es
+válido? ¿inválido?) quedaba sin ejercitar.
+
+**Qué decidí**: agregarlos. Son baratos (dos tests más en `auth.test.js`) y cierran un hueco
+real — antes nadie probaba que un token válido deja pasar (`next()` + `req.user` completo) ni
+que uno con formato de JWT pero inválido responde 401 igual que la ausencia de token. Con eso,
+`auth.js` pasó de 60% a 100% de ramas.
 
 ## Problemas encontrados
 
@@ -272,6 +293,35 @@ recorrería, y qué se decidió)_
   como un filtro de archivos. Se resolvía con `MSYS_NO_PATHCONV=1` antes del `docker run` — sólo
   hace falta para probar la receta a mano en Windows; en el pipeline (Linux) no pasa.
 
+- Para el ejercicio del camino sin cubrir, el reporte HTML del provider `v8` de vitest no marca
+  el `?.` de forma tan visual como describe la guía (pensada para ReportGenerator de .NET): la
+  línea aparece "cubierta" aunque uno de sus caminos no lo esté. Lo que sí tiene el detalle
+  exacto es `coverage/lcov.info` (las líneas `BRDA:<línea>,<bloque>,<rama>,<veces>`): ahí se ve,
+  rama por rama, cuántas veces corrió cada una — 0 veces es la que falta.
+
 ## Declaración de uso de IA
 
-_(se completa al cierre, con qué hizo Claude Code, qué hizo Blas, y cómo se verificó cada parte)_
+**Qué hizo Claude Code**: escribió el refactor de inyección de dependencias (`reglas.js` +
+`servicios/**`), los 47 tests (backend y frontend), las etapas `test` de los Dockerfiles, los
+pasos nuevos de `ci.yml`, y propuso los umbrales a partir de la medición real. También escribió
+los borradores de este archivo.
+
+**Qué hizo Blas**: decidió corregir el bug de `validarRating` en vez de dejarlo documentado sin
+tocar; decidió sacar la feature de fotos (PR 25) después de probarla y encontrarle un problema
+real de validación, en vez de parchearla; revisó y mergeó cada PR; reescribió esta sección con
+sus palabras.
+
+**Cómo se verificó** (no "se resolvió con la IA" — esto, concretamente):
+- Cada endpoint tocado por el refactor del PR 1, probado con `curl` contra la app corriendo en
+  Docker, comparando el mismo comportamiento HTTP de antes y después.
+- Mutantes a mano: invertir `||` por `&&`, correr un borde de `>` a `>=` en las reglas que más
+  importan (`validarRating`, `puedeBorrarResena` en el back; `puedeEnviarResena`,
+  `puedeEnviarAcceso` en el front) y confirmar que algún test se ponía en rojo — documentado en
+  los PRs 1 y 2.
+- El freno probado de verdad, dos veces: comentando tests a propósito en una rama (PR 3) y con
+  el PR 4/5, viendo el job ponerse rojo con el mensaje exacto de vitest y el merge bloqueado
+  (`mergeStateStatus: BLOCKED`), no sólo imaginando que iba a pasar.
+- El ejercicio del camino sin cubrir se hizo leyendo `coverage/lcov.info` línea por línea, no
+  asumiendo dónde estaba el hueco.
+- La app completa, a mano en el navegador (Playwright) después de cada refactor grande, antes
+  de abrir el PR.
