@@ -152,8 +152,7 @@ Usé Claude  para elegir dónde romper el build (el frontend, porque el backend 
 
 ## Qué lógica elegí testear y por qué ésa
 
-_(se completa en el PR 1 y el PR 2 — entre lo que entra: la REGLA 7 agregada en el PR 0, validar
-que la foto de un juego/reseña sea una URL http(s) válida: https://github.com/BlasSardoy/ingsoft3-tp01/pull/25)_
+_(se completa en el PR 1 y el PR 2)_
 
 ## Umbral de coverage
 
