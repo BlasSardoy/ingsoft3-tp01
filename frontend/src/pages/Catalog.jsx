@@ -243,8 +243,11 @@ function AdminPanel({ token, onCambio }) {
             type="url"
             value={form.image_url}
             onChange={(e) => set("image_url", e.target.value)}
-            placeholder="https://..."
+            placeholder="https://.../portada.jpg"
           />
+          <span className="field-hint field-hint--muted">
+            Link directo a la imagen (termina en .jpg, .png…), no la página donde la viste
+          </span>
         </label>
 
         <div className="admin-form__actions">

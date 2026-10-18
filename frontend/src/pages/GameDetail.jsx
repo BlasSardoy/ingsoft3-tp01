@@ -142,10 +142,13 @@ export default function GameDetail() {
             <input
               type="url"
               className="review-form__photo"
-              placeholder="URL de una foto para tu reseña (opcional)"
+              placeholder="https://.../foto.jpg (opcional)"
               value={miFoto}
               onChange={(e) => setMiFoto(e.target.value)}
             />
+            <p className="field-hint field-hint--muted">
+              Link directo a la imagen (termina en .jpg, .png…), no la página donde la viste
+            </p>
             <button className="btn btn--primary" type="submit" disabled={!puedeEnviar}>
               {guardando ? "Guardando…" : "Guardar reseña"}
             </button>

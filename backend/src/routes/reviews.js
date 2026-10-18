@@ -31,9 +31,12 @@ router.post("/games/:id/reviews", authenticate, async (req, res) => {
   }
 
   // REGLA DE NEGOCIO 7 (misma regla que en games.js): la foto es opcional,
-  // pero si viene tiene que ser una URL http(s) válida.
-  if (photo_url && !/^https?:\/\/.+/i.test(photo_url.trim())) {
-    return res.status(400).json({ error: "photo_url debe ser una URL http(s) válida" });
+  // pero si viene tiene que ser un link directo a una imagen, no una URL
+  // cualquiera (una página HTML pasaba esta validación y se mostraba rota).
+  if (photo_url && !/^https?:\/\/.+\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i.test(photo_url.trim())) {
+    return res.status(400).json({
+      error: "photo_url debe ser un link directo a una imagen (http(s), terminado en .jpg/.png/.gif/.webp/.avif/.svg)",
+    });
   }
 
   try {

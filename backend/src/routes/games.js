@@ -120,13 +120,17 @@ router.post("/", authenticate, requireAdmin, async (req, res) => {
 
   // -------------------------------------------------------------------------
   // REGLA DE NEGOCIO 7: la foto del juego es opcional, pero si viene tiene
-  // que ser una URL absoluta (http/https). No validamos que la imagen exista
-  // de verdad del otro lado: eso requeriría salir a la red desde el backend.
+  // que ser una URL absoluta (http/https) que termine pareciendo un archivo
+  // de imagen. No alcanza con "empieza con http": un link a una página HTML
+  // (ej. la nota de un blog) pasaba esa validación y después el <img> del
+  // front se mostraba roto, sin ningún error en el momento de guardarla.
+  // No validamos que el archivo exista de verdad del otro lado: eso
+  // requeriría salir a la red desde el backend.
   // -------------------------------------------------------------------------
-  if (image_url && !/^https?:\/\/.+/i.test(image_url.trim())) {
-    return res
-      .status(400)
-      .json({ error: "image_url debe ser una URL http(s) válida" });
+  if (image_url && !/^https?:\/\/.+\.(jpe?g|png|gif|webp|avif|svg)(\?.*)?$/i.test(image_url.trim())) {
+    return res.status(400).json({
+      error: "image_url debe ser un link directo a una imagen (http(s), terminado en .jpg/.png/.gif/.webp/.avif/.svg)",
+    });
   }
 
   try {

@@ -345,6 +345,10 @@ textarea {
   color: var(--rose);
   font-size: 0.8rem;
 }
+.field-hint--muted {
+  color: var(--muted);
+  margin: -8px 0 12px;
+}
 
 .alert {
   border-radius: 8px;
