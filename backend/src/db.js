@@ -54,6 +54,16 @@ CREATE TABLE IF NOT EXISTS reviews (
   -- de routes/reviews.js: sin ella, reseñar dos veces duplicaría filas.
   UNIQUE (game_id, user_id)
 );
+
+-- ---------------------------------------------------------------------------
+-- MIGRACIÓN: columnas de foto, agregadas después de la primera versión del
+-- esquema. "CREATE TABLE IF NOT EXISTS" no las suma a una tabla que ya existe
+-- (un volumen viejo se queda sin ellas), por eso van como ALTER aparte, y
+-- también son IF NOT EXISTS: no rompen si corren sobre un volumen nuevo que
+-- ya las trae del CREATE TABLE de arriba.
+-- ---------------------------------------------------------------------------
+ALTER TABLE games   ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS photo_url TEXT;
 `;
 
 async function ensureSchema() {

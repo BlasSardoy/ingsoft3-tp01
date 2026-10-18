@@ -140,3 +140,43 @@ Activé el gate pidiendo los checks build-backend/build-frontend antes de mergea
 ## Declaración de uso de IA
 
 Usé Claude  para elegir dónde romper el build (el frontend, porque el backend Express no compila ni empaqueta). Me ayodó para escribir mis ideas en el archivo de decisiones.md.
+
+------------------------------------
+# Decisiones TP5
+--------------------------------------------
+
+> Esta sección se va completando a medida que avanza el trabajo. Los borradores de cada entrada
+> los propone la IA; quedan para reescribirlos con mis propias palabras antes de la defensa.
+
+## PR 0 — Ajustes a la app antes de los tests
+
+### Cambio: foto del juego y foto de la reseña (URL)
+
+**Qué se agregó:** dos columnas opcionales, `games.image_url` y `reviews.photo_url`, y una regla
+de negocio nueva (REGLA 7): si la URL viene, tiene que empezar con `http://` o `https://`; si no
+viene, no pasa nada (campo opcional). Se valida en `POST /api/games` y en el upsert de
+`POST /api/games/:id/reviews`.
+
+**Por qué esta regla y no otra:** no se valida que la imagen exista de verdad del otro lado (eso
+pediría salir a la red desde el backend, o subir archivos reales — se evaluó y se descartó para
+no sumar una dependencia nueva como `multer` ni un volumen nuevo). La validación de formato alcanza
+para dar un error claro (400) en vez de guardar basura, y da un caso de test lindo: URL válida,
+URL sin protocolo (inválida), y campo vacío (válido, por opcional).
+
+**Migración:** las columnas se agregan con `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` en
+`db.js`, aparte del `CREATE TABLE IF NOT EXISTS` del esquema original. `CREATE TABLE IF NOT EXISTS`
+no las hubiera sumado a un volumen ya existente (el `db_data` que ya estaba corriendo con el
+esquema viejo); el `ALTER` sí corre sobre un volumen existente sin perder datos, y no hace nada si
+las columnas ya están (por eso también es `IF NOT EXISTS`). Probado localmente: reinicié el backend
+sobre el volumen con datos previos y las columnas aparecieron solas, sin recrear nada.
+
+**Editar una reseña ya existente:** no fue necesario tocar código — la REGLA 4 (una reseña por
+usuario y juego, con upsert sobre `ON CONFLICT`) ya cubría el caso: reenviar el formulario con otro
+puntaje/comentario/foto actualiza la fila existente en vez de crear una nueva. Verificado con
+`curl`: dos `POST` seguidos a la misma reseña devuelven el mismo `id` y el juego queda con
+`review_count: 1`.
+
+**Cómo se verificó:** `curl` contra los tres endpoints tocados (alta de juego con URL válida/
+inválida/vacía, upsert de reseña con foto) y prueba manual en el navegador.
+
+**Link al PR:** _(completar al abrir el PR)_

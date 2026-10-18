@@ -86,7 +86,7 @@ router.get("/:id", async (req, res) => {
     if (!game) return res.status(404).json({ error: "Juego no encontrado" });
 
     const { rows: reviews } = await pool.query(
-      `SELECT r.id, r.rating, r.comment, r.created_at, r.user_id, u.username
+      `SELECT r.id, r.rating, r.comment, r.photo_url, r.created_at, r.user_id, u.username
        FROM reviews r
        JOIN users u ON u.id = r.user_id
        WHERE r.game_id = $1
@@ -110,7 +110,7 @@ router.get("/:id", async (req, res) => {
 //   requireAdmin  → corta con 403 si req.user.role !== 'admin'
 // ---------------------------------------------------------------------------
 router.post("/", authenticate, requireAdmin, async (req, res) => {
-  const { title, category, platform, description = "" } = req.body;
+  const { title, category, platform, description = "", image_url = "" } = req.body;
 
   if (!title || !category || !platform) {
     return res
@@ -118,12 +118,23 @@ router.post("/", authenticate, requireAdmin, async (req, res) => {
       .json({ error: "title, category y platform son obligatorios" });
   }
 
+  // -------------------------------------------------------------------------
+  // REGLA DE NEGOCIO 7: la foto del juego es opcional, pero si viene tiene
+  // que ser una URL absoluta (http/https). No validamos que la imagen exista
+  // de verdad del otro lado: eso requeriría salir a la red desde el backend.
+  // -------------------------------------------------------------------------
+  if (image_url && !/^https?:\/\/.+/i.test(image_url.trim())) {
+    return res
+      .status(400)
+      .json({ error: "image_url debe ser una URL http(s) válida" });
+  }
+
   try {
     const { rows } = await pool.query(
-      `INSERT INTO games (title, category, platform, description, created_by)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO games (title, category, platform, description, image_url, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [title, category, platform, description, req.user.id]
+      [title, category, platform, description, image_url || null, req.user.id]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
