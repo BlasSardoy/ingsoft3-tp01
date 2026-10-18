@@ -25,13 +25,17 @@
 // ---------------------------------------------------------------------------
 const BASE = "/api";
 
-async function request(path, { method = "GET", body, token } = {}) {
+// fetchFn por parámetro (con fetch como valor por defecto): en producción
+// entra el fetch real del navegador; en los tests, un doble (vi.fn()) que
+// no sale a la red. Es la misma idea de inyección de dependencias del
+// backend (src/servicios/**), aplicada del lado del cliente HTTP.
+export async function request(path, { method = "GET", body, token, fetchFn = fetch } = {}) {
   const headers = { "Content-Type": "application/json" };
 
   // Si hay token, va en el header que espera el middleware authenticate.
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetchFn(`${BASE}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

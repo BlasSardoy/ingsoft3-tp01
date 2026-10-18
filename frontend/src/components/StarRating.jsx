@@ -6,9 +6,11 @@
 // ============================================================================
 
 import React from "react";
+import { estrellasLlenas } from "../lib/reglas.js";
 
 export default function StarRating({ value = 0, onChange, readOnly = true, size = 18 }) {
   const estrellas = [1, 2, 3, 4, 5];
+  const llenas = estrellasLlenas(value);
 
   return (
     <span
@@ -19,7 +21,7 @@ export default function StarRating({ value = 0, onChange, readOnly = true, size 
     >
       {estrellas.map((n) => {
         // Redondeamos porque el promedio viene con decimales (ej. 4.33).
-        const llena = n <= Math.round(value);
+        const llena = n <= llenas;
 
         return (
           <button

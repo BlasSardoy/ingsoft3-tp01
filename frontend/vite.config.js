@@ -15,4 +15,15 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    environment: "node", // sin DOM: los 4 tests pedidos no lo necesitan
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html", "lcov", "json-summary"],
+      // acá NO se excluye: se dice qué SÍ entra. Lo que no está en esta
+      // lista (componentes, páginas) se verifica con e2e en el TP7.
+      include: ["src/lib/**", "src/api.js"],
+      thresholds: { lines: 80, branches: 80 }, // provisorio: se fija con la medición real (PR 3)
+    },
+  },
 });
