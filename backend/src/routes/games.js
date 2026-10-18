@@ -3,11 +3,17 @@
 // ============================================================================
 // Lectura: pública (cualquiera puede ver el catálogo).
 // Escritura: sólo admin (ver REGLA 5, aplicada con el middleware requireAdmin).
+//
+// GET / y GET /categories quedan como pegamento liviano: ninguna de las dos
+// tiene una regla de negocio (ni validación, ni decisión) — sólo arman una
+// consulta con el filtro que llega por query string. El resto sí delega en
+// src/servicios/juegos.js.
 // ============================================================================
 
 const express = require("express");
 const { pool } = require("../db");
 const { authenticate, requireAdmin } = require("../middleware/auth");
+const { crearJuego, obtenerJuego, borrarJuego } = require("../servicios/juegos");
 
 const router = express.Router();
 
@@ -71,30 +77,8 @@ router.get("/categories", async (_req, res) => {
 // ---------------------------------------------------------------------------
 router.get("/:id", async (req, res) => {
   try {
-    const { rows: gameRows } = await pool.query(
-      `SELECT g.*,
-              COALESCE(AVG(r.rating), 0)::numeric(3,2) AS avg_rating,
-              COUNT(r.id)::int                          AS review_count
-       FROM games g
-       LEFT JOIN reviews r ON r.game_id = g.id
-       WHERE g.id = $1
-       GROUP BY g.id`,
-      [req.params.id]
-    );
-
-    const game = gameRows[0];
-    if (!game) return res.status(404).json({ error: "Juego no encontrado" });
-
-    const { rows: reviews } = await pool.query(
-      `SELECT r.id, r.rating, r.comment, r.created_at, r.user_id, u.username
-       FROM reviews r
-       JOIN users u ON u.id = r.user_id
-       WHERE r.game_id = $1
-       ORDER BY r.created_at DESC`,
-      [req.params.id]
-    );
-
-    res.json({ ...game, reviews });
+    const { status, body } = await obtenerJuego(pool, req.params.id);
+    res.status(status).json(body);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al obtener el juego" });
@@ -110,22 +94,9 @@ router.get("/:id", async (req, res) => {
 //   requireAdmin  → corta con 403 si req.user.role !== 'admin'
 // ---------------------------------------------------------------------------
 router.post("/", authenticate, requireAdmin, async (req, res) => {
-  const { title, category, platform, description = "" } = req.body;
-
-  if (!title || !category || !platform) {
-    return res
-      .status(400)
-      .json({ error: "title, category y platform son obligatorios" });
-  }
-
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO games (title, category, platform, description, created_by)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [title, category, platform, description, req.user.id]
-    );
-    res.status(201).json(rows[0]);
+    const { status, body } = await crearJuego(pool, req.body, req.user);
+    res.status(status).json(body);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al crear el juego" });
@@ -140,13 +111,9 @@ router.post("/", authenticate, requireAdmin, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.delete("/:id", authenticate, requireAdmin, async (req, res) => {
   try {
-    const { rowCount } = await pool.query("DELETE FROM games WHERE id = $1", [
-      req.params.id,
-    ]);
-    if (!rowCount) return res.status(404).json({ error: "Juego no encontrado" });
-
-    // 204 = "salió bien y no hay nada que devolver".
-    res.status(204).end();
+    const { status, body } = await borrarJuego(pool, req.params.id);
+    if (status === 204) return res.status(204).end();
+    res.status(status).json(body);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error al borrar el juego" });
