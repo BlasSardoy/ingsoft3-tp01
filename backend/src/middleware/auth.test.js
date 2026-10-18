@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import jwt from "jsonwebtoken";
 import { authenticate, requireAdmin } from "./auth.js";
 
 describe("requireAdmin — REGLA 5 (sólo admin)", () => {
@@ -48,5 +49,37 @@ describe("authenticate", () => {
     // Assert
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  // Ejercicio del camino sin cubrir (ver decisiones.md): ningún test mandaba
+  // un token PRESENTE — ni inválido ni válido. Éste cubre el inválido.
+  it("con un token presente pero inválido, responde 401", () => {
+    // Arrange
+    const req = { headers: { authorization: "Bearer esto-no-es-un-jwt-valido" } };
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    const next = vi.fn();
+
+    // Act
+    authenticate(req, res, next);
+
+    // Assert
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("con un token válido, llama a next una sola vez y completa req.user", () => {
+    // Arrange
+    process.env.JWT_SECRET = "secreto-de-test";
+    const token = jwt.sign({ id: 1, username: "user1", role: "user" }, process.env.JWT_SECRET);
+    const req = { headers: { authorization: `Bearer ${token}` } };
+    const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis() };
+    const next = vi.fn();
+
+    // Act
+    authenticate(req, res, next);
+
+    // Assert
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user.username).toBe("user1");
   });
 });
