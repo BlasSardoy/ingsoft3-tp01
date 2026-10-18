@@ -127,9 +127,6 @@ export default function Catalog() {
           <div className="game-card-wrap" key={g.id}>
             <Link to={`/games/${g.id}`} className="game-card">
               <div className="game-card__notch" aria-hidden="true" />
-              {g.image_url && (
-                <img className="game-card__cover" src={g.image_url} alt="" aria-hidden="true" />
-              )}
               <span className="badge">{g.category}</span>
               <h3>{g.title}</h3>
               <p className="muted small">{g.platform}</p>
@@ -170,7 +167,6 @@ function AdminPanel({ token, onCambio }) {
     category: "",
     platform: "",
     description: "",
-    image_url: "",
   });
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -192,7 +188,7 @@ function AdminPanel({ token, onCambio }) {
     setError("");
     try {
       await api.createGame(form, token);
-      setForm({ title: "", category: "", platform: "", description: "", image_url: "" });
+      setForm({ title: "", category: "", platform: "", description: "" });
       onCambio(); // recarga la lista para que aparezca el juego nuevo
     } catch (err) {
       setError(err.message);
@@ -235,15 +231,6 @@ function AdminPanel({ token, onCambio }) {
             rows={2}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
-          />
-        </label>
-        <label>
-          URL de la portada (opcional)
-          <input
-            type="url"
-            value={form.image_url}
-            onChange={(e) => set("image_url", e.target.value)}
-            placeholder="https://..."
           />
         </label>
 

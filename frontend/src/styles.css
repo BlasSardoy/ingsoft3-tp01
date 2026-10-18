@@ -288,14 +288,6 @@ textarea {
   background: var(--ink);
   box-shadow: inset 0 0 6px rgba(0, 230, 255, 0.5);
 }
-.game-card__cover {
-  display: block;
-  width: calc(100% + 36px);
-  height: 140px;
-  margin: -22px -18px 12px;
-  object-fit: cover;
-  border-radius: 12px 12px 0 0;
-}
 .game-card h3 {
   font-size: 1.15rem;
   margin: 4px 0 2px;
@@ -402,14 +394,6 @@ textarea {
 .game-header {
   margin-bottom: 20px;
 }
-.game-header__cover {
-  display: block;
-  width: calc(100% + 48px);
-  max-height: 320px;
-  object-fit: cover;
-  margin: -24px -24px 16px;
-  border-radius: 14px 14px 0 0;
-}
 .review-form textarea {
   width: 100%;
   margin: 12px 0;
@@ -420,17 +404,7 @@ textarea {
   padding: 10px 12px;
   resize: vertical;
 }
-.review-form__photo {
-  width: 100%;
-  margin: 0 0 12px;
-  background: var(--ink);
-  border: 1px solid var(--panel-border);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 10px 12px;
-}
-.review-form textarea:focus,
-.review-form__photo:focus {
+.review-form textarea:focus {
   border-color: var(--teal);
   box-shadow: var(--glow-cyan);
 }
@@ -459,14 +433,6 @@ textarea {
 }
 .review p {
   margin: 0 0 8px;
-}
-.review__photo {
-  display: block;
-  max-width: 220px;
-  max-height: 160px;
-  object-fit: cover;
-  border-radius: 8px;
-  margin: 0 0 10px;
 }
 
 /* ---------- admin ---------- */
