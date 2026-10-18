@@ -185,6 +185,13 @@ es el camino "la base explotó por algo que no previ").
 
 Link a la corrida con el Summary (coverage de los dos lados, publicado y descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
+**Prueba de que el freno funciona de verdad**: antes de mergear este PR, comenté a propósito
+los 4 tests de `juegos.test.js` (`it.skip`) en esta misma rama. La cobertura de líneas del
+backend cayó a 77.19% — debajo del umbral de 85% — y el job se puso en rojo con
+`ERROR: Coverage for lines (77.19%) does not meet global threshold (85%)`:
+https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155760336. Después revertí el
+`it.skip` y la corrida siguiente volvió a verde.
+
 ## Qué quedó fuera de la cuenta de cobertura
 
 **Backend**: `src/index.js` (arranque, cablea Express), `src/seed.js` (datos de ejemplo),
