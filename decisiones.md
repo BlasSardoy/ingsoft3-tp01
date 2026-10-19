@@ -172,7 +172,7 @@ El umbral va sobre **líneas y ramas**, en los dos lados:
 
 **Por qué esos números:** los fijé unos puntos abajo de lo que medía cuando armé la suite (backend 90.11% / 79.24%, frontend 97.5% / 82.35%), para que no se rompa por una fluctuación chica pero sí cuando entra código nuevo sin tests. Puse ramas además de líneas porque la de líneas puede dar 100% con un `if` recorrido por un solo camino.
 
-**Por qué no lo subí aunque hoy haya margen:** con esa holgura el umbral igual frena un archivo nuevo sin tests (el PR que dejé abierto bajó el backend a 81.84% con un solo archivo). Para subirlo a 90/80 en el backend tendría que testear lo que hoy queda sin cubrir: el listado y el detalle de juegos en `servicios/juegos.js` (66.66% de ramas) y el `catch` genérico de cada servicio, que no es una regla de negocio sino "la base falló por algo que no preví". En el frontend lo que falta es el armado del query string de `listGames` en `api.js`.
+**Por qué no lo subí aunque hoy haya margen:** con esa holgura el umbral igual frena un archivo nuevo sin tests (el PR que dejé abierto bajó el backend a 81.84% con un solo archivo). Para subirlo a 90/80 en el backend tendría que testear lo que hoy queda sin cubrir: el detalle de un juego que existe y el borrado exitoso en `servicios/juegos.js` (66.66% de ramas) y el `catch` genérico de cada servicio, que no es una regla de negocio sino "la base falló por algo que no preví". En el frontend lo que falta es el armado del query string de `listGames` en `api.js`.
 
 Summary con el coverage de los dos lados (y el reporte descargable): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39155581112
 
@@ -254,7 +254,7 @@ El backend es Node 22 + Express, no .NET. Uso vitest en los dos lados.
 
 ## Declaración de uso de IA
 
-Usé Claude Code para escribir el refactor de inyección de dependencias, los tests de backend y frontend, las etapas `test` de los Dockerfiles y los pasos nuevos del `ci.yml`, y para proponer los umbrales a partir de la medición real.
+Escribí el refactor de inyección de dependencias, los tests de backend y frontend, las etapas `test` de los Dockerfiles y los pasos nuevos del `ci.yml` con asistencia de la IA (Claude Code), que también me ayudó a proponer los umbrales a partir de la medición real.
 
 Lo verifiqué así:
 - Probé cada endpoint tocado por el refactor con `curl` contra la app en Docker, antes y después, comparando las respuestas.
@@ -262,3 +262,5 @@ Lo verifiqué así:
 - Vi el freno funcionar de verdad en los dos PRs, con el mensaje exacto de vitest y el merge bloqueado.
 - Hice el ejercicio del camino sin cubrir leyendo yo el `lcov.info`.
 - Probé la app completa en el navegador después de cada refactor grande.
+
+**Qué verifican los tests y qué NO cubren.** Revisé cada test que escribí con asistencia de la IA: los de reglas comprueban el resultado (`ok` y el mensaje de error), y los de servicios comprueban además la interacción con la base (por ejemplo, que borrar una reseña ajena llama a `db.query` una sola vez y nunca llega al `DELETE`). Lo que NO está cubierto: el detalle de un juego que existe (`obtenerJuego` con sus reseñas), el borrado exitoso de un juego (`borrarJuego` → 204), el `throw err;` del `catch` genérico de cada servicio, la REGLA 4 (vive en la base, es de integración) y, en el frontend, los componentes y el query string de `listGames`.
