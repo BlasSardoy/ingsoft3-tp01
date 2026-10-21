@@ -1,3 +1,13 @@
+## Enlaces del TP6
+
+- Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Cadena, eslabón 2 (PR con tests en verde, "Entrar al registry" salteado): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
+- Cadena, eslabón 3 (main: "Construir y publicar" es el último paso): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
 # Decisiones — TP1
 --------------------------------------------
 1. Por qué Git no pudo resolver el conflicto solo — y qué habría tenido que pasar para que nunca apareciera.
@@ -264,3 +274,165 @@ Lo verifiqué así:
 - Probé la app completa en el navegador después de cada refactor grande.
 
 **Qué verifican los tests y qué NO cubren.** Revisé cada test que escribí con asistencia de la IA: los de reglas comprueban el resultado (`ok` y el mensaje de error), y los de servicios comprueban además la interacción con la base (por ejemplo, que borrar una reseña ajena llama a `db.query` una sola vez y nunca llega al `DELETE`). Lo que NO está cubierto: el detalle de un juego que existe (`obtenerJuego` con sus reseñas), el borrado exitoso de un juego (`borrarJuego` → 204), el `throw err;` del `catch` genérico de cada servicio, la REGLA 4 (vive en la base, es de integración) y, en el frontend, los componentes y el query string de `listGames`.
+
+# Decisiones TP6
+--------------------------------------------
+
+## Por qué el artefacto se publica sólo con la verificación en verde
+
+La publicación depende de una cadena de 3 eslabones:
+
+1. **Nada entra a `main` sin el pipeline verde:** los required checks del TP4 más el umbral de cobertura del TP5. El PR #33 sigue frenado.
+2. **Sólo `main` publica:** `push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}`, y "Entrar al registry" corre con `if: github.event_name == 'push'`. En un PR los tests corren y el login se saltea: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
+3. **"Construir y publicar" es el ÚLTIMO paso del mismo job que corre los tests:** si fallan, el job muere y nunca llega. No hay un `if` "si los tests pasaron": la condición es el orden de los pasos. https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
+
+Si se publicara igual, "estar en el registry" dejaría de significar "pasó la verificación".
+
+**Qué NO garantiza:** un `docker push` a mano desde mi máquina entra igual. La cadena cubre lo que publica el pipeline, no lo que físicamente puede entrar. Además, el tag `sha-` identifica el commit; la imagen exacta la identifica el digest `sha256`.
+
+**Permisos:** `permissions` por job (`contents: read`, `packages: write`), no a nivel workflow: mínimo privilegio. Uso `GITHUB_TOKEN`, sin secrets nuevos. El nombre de la imagen va escrito a mano en minúsculas, porque el usuario `BlasSardoy` tiene mayúsculas y el registry no las acepta.
+
+**Comprobación:** `docker logout ghcr.io` y después `docker pull` de las dos imágenes `sha-2d3e982879ef20e411792213d72bf514a816f5f6`, sin credenciales.
+- https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+- https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+
+## Continuous Delivery vs Continuous Deployment
+
+Implementé **Continuous Delivery**: QA se despliega solo, PROD sólo con aprobación humana.
+
+No hice Continuous Deployment porque mi red de seguridad hoy es unit tests + smoke, sin e2e ni monitoreo. Automatizar PROD sería automatizar la propagación de errores. Para dar ese paso me faltaría e2e contra QA (TP7) y observabilidad con alertas (TP9).
+
+## Diseño de la cadena y alcance de cada secret
+
+**La cadena:** `build-backend` + `build-frontend` (en paralelo) → `deploy-qa` (`needs:` ambos, `if:` main, `environment: qa`) → `deploy-prod` (`needs: deploy-qa`, `environment: production` con required reviewer, `concurrency` `deploy-prod`). `deploy-prod` no repite el `if`: lo hereda por la cadena. En un PR `deploy-qa` se saltea y `deploy-prod` también.
+
+**`&ref=$GITHUB_SHA` en los 4 hooks:** se despliega el commit verificado/aprobado, no la punta de `main`. Con dos merges seguidos, sin `&ref` la corrida de A desplegaría B; en PROD aprobaría A y subiría lo último. Va con `&` y no con `?` porque la URL del hook ya trae su propio parámetro de clave.
+
+**Secrets:** `RENDER_HOOK_API_QA` y `RENDER_HOOK_FRONT_QA` son environment secrets de `qa`; `RENDER_HOOK_API_PROD` y `RENDER_HOOK_FRONT_PROD`, de `production`. Sin aprobación, ningún job los lee. No hay secrets de deploy a nivel repo: si estuvieran ahí, cualquier job (incluso el de un PR contra `main`) podría disparar PROD. El registry usa `GITHUB_TOKEN`.
+
+**Auto-Deploy en Off** en los 4 servicios de Render: el deploy lo dispara el pipeline, no el proveedor.
+
+**Qué quedó por variable y qué adentro de la imagen:**
+- Front: `BACKEND_URL` y `DNS_RESOLVER` por variable, con la plantilla `/etc/nginx/templates/default.conf.template`. Los defaults de compose (`http://backend:8080` y `127.0.0.11`) están en el Dockerfile, así `docker compose up` sigue igual.
+- Back: `DATABASE_URL`, `JWT_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`. `PORT` lo define Render.
+- Adentro de la imagen: el código, el build de Vite y las dependencias.
+
+Por eso la misma imagen sirve en QA y en PROD: es lo que hace posible el TP7.
+
+Saqué `proxy_set_header Host $host` del nginx: con esa línea Render recibía el host del front y no sabía a qué servicio rutear el pedido.
+
+**Una base por entorno:** `app_qa` y `app_prod` en Neon, en el mismo proyecto. "production" es sólo el nombre de la branch por defecto de Neon; los entornos los separan las dos bases. El esquema lo crea `ensureSchema()` (`CREATE TABLE IF NOT EXISTS`) + `seed()` al arrancar el backend.
+
+**Cómo comprobé que cada entorno usa su base:** inserté un juego "SOY PROD" SÓLO en `app_prod` desde el SQL Editor de Neon. Aparece en https://gamerate-api-prod.onrender.com/api/games y en el front de PROD, y NO en https://gamerate-api-qa.onrender.com/api/games. Lo dejo cargado para repetirlo en la defensa. Además, el Service ID de cada hook de PROD coincide con el de `gamerate-api-prod` y `gamerate-front-prod`.
+
+## Qué mira mi aprobador antes de aprobar
+
+- Que `deploy-qa` de ESA corrida esté verde (smoke OK) y que QA muestre el cambio.
+- Qué cambia el commit (el PR y su diff). Si toca config o infraestructura de deploy, más cuidado. Si toca el esquema de la base, que sea compatible con la versión que está en PROD.
+- Timing: no aprobar si no voy a poder mirar PROD después (en un equipo real: horas pico, sin guardia).
+- Tener anotado el SHA del último deploy bueno de PROD (Deployments → production) ANTES de aprobar: es lo que necesito si tengo que volver.
+- Si hay dos corridas esperando, rechazar la vieja a mano. `concurrency` (`group: deploy-prod`, `cancel-in-progress: false`) evita que dos deploys a PROD se pisen, pero NO ordena la cola de aprobaciones: si apruebo la vieja después de la nueva, PROD retrocede.
+
+**Rechazo:** corrida #64 (merge del #41) https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39646268067. Era el primer deploy a PROD con la plantilla de nginx, que en QA había fallado por un typo en `DNS_RESOLVER` (corrida #62, intento 1). Antes de aprobar quise revisar las variables de `gamerate-front-prod` y que los hooks de PROD apuntaran a los servicios `-prod`. Lo revisé: estaban bien.
+
+**Aprobación con cambio visible:** corrida #66 (merge del #42, nuevo subtítulo del catálogo "Puntuá cada juego del 1 al 5…") https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39647027581
+
+**Qué NO puede ver mi aprobador:** si la app funciona para un usuario real más allá del smoke (login, reseñas), errores en logs, métricas de uso. Me falta observabilidad (TP9).
+
+## Letra chica del free tier
+
+- **Render:** 750 h de instancia por mes POR WORKSPACE, compartidas por los 4 servicios. Duermen a los 15 min sin tráfico, con cold start de hasta ~50 s. 500 min de build por mes, y cada promoción reconstruye hasta 4 servicios. Si se acaban los minutos de build, el hook responde igual y el smoke da verde contra la versión vieja.
+- **Neon:** 0.5 GB. El cómputo se suspende a los ~5 min sin uso y se despierta solo. Descarté el Postgres de Render porque el gratuito expira a los 30 días.
+- **Cómo lo maneja el pipeline:** smoke con 30 reintentos cada 20 s y `--max-time 10` en cada `curl`.
+- **Presupuesto:** no tengo nada haciendo ping; los servicios duermen solos, así que las horas alcanzan hasta la defensa. Reviso el consumo en Workspace → Billing.
+
+## Qué garantía pierdo porque Render reconstruye
+
+Promuevo el mismo COMMIT, no la misma IMAGEN. Lo que corre en QA y PROD es otra construcción, no la imagen que verificaron los tests, y puede salir distinta: `node:22-alpine` y `nginx:alpine` son tags que se mueven, y un build posterior puede tomar otra imagen base. La imagen de ghcr.io queda publicada pero sin usar; desplegarla es el TP7.
+
+## Qué prueba mi smoke y qué no
+
+**Prueba:** `/health` (proceso vivo), `/api/games` de la api (la base responde), `/` del front (sirve la SPA) y `/api/games` del front (la plantilla de nginx llega a SU api). El cuarto chequeo lo agregué yo: sin él, un front sin api pasaba en verde.
+
+**Lo frenó de verdad:** corrida #62, intento 1 https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39641950056/attempts/1. En Render la variable del front de QA estaba escrita `DNS_RESVOLER`. nginx no la encontró y usó el valor por defecto del Dockerfile (`127.0.0.11`, el DNS de Docker, que en Render no existe). Render decía Live, pero `/api` del front daba 502. El smoke quedó en rojo tras 30 reintentos. Lo diagnostiqué con el log de nginx (`recv() failed … while resolving, resolver: 127.0.0.11`), corregí el nombre y el re-run (intento 2) dio verde: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39641950056
+
+**No prueba QUÉ versión corre:** el hook responde al instante y Render sigue sirviendo la versión vieja mientras construye. Me pasó con el #43: el smoke pasó y `/health` de PROD siguió unos minutos con la versión anterior. Por eso `/health` ahora devuelve el commit (`RENDER_GIT_COMMIT`), corrida #68 https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39648647975. Compararlo con `github.sha` dentro del smoke queda para el TP7. Tampoco prueba login, reseñas ni permisos.
+
+## Deployment pattern para producción real y rollback
+
+**Elegiría blue-green.** GameRate es chica, duplicar el entorno cuesta poco y el rollback es instantáneo: volver el switch. Canary no: necesita métricas para saber si "el canario sangra", y hoy no las tengo. Cuidado con la base compartida entre blue y green: los cambios de esquema van en dos pasos (expand/contract) para que la versión vieja siga funcionando.
+
+**Qué observabilidad me falta hoy para ejecutarlo:** métricas de errores 5xx y latencia por versión para decidir si el switch salió bien, alertas, y un health check que pruebe más que "responde" (hoy `/health` dice el commit pero no si login o reseñas funcionan). Llega en el TP9.
+
+**Feature flags** los usaría para una feature puntual, por ejemplo un sistema de puntaje nuevo: deploy ≠ release, el código llega apagado y se prende por usuario o porcentaje, y apagarlo es el rollback.
+
+**Plan de rollback actual:**
+1. Ver en Deployments → production o en Render el último commit bueno.
+2. Copiar los dos hooks de PROD desde Render (Settings → Deploy Hook), porque el secret de GitHub no se puede volver a leer.
+3. Dispararlos con ese commit.
+4. Esperar Live en Deploys de los dos servicios.
+5. Comprobar `/health`, que muestra el commit.
+
+Los comandos, sin los valores de los hooks (nunca se escriben en el repo):
+
+```
+SHA_ANTERIOR=<sha del último deploy bueno>
+curl -fsS "$HOOK_API_PROD&ref=$SHA_ANTERIOR"
+curl -fsS "$HOOK_FRONT_PROD&ref=$SHA_ANTERIOR"
+```
+
+Alternativa: re-run del job `deploy-prod` de esa corrida. Pide aprobación, y GitHub sólo lo deja hasta 30 días.
+
+**Medido:** rollback de `3c63bae` a `1d0e1c2`. Disparo a las 15:07:38. En Render, api: inicio 15:07:35 → Live 15:08:03 (27,7 s); front: inicio 15:07:36 → Live 15:08:02 (25,7 s). Total ≈ 28 s. Deploys de Render: `dep-dbcfupqfngtc73aflal0` (api) y `dep-dbcfuq6ea8bs73fdt4ig` (front). Fue rápido porque Render reusó la caché del build; desde cero serían minutos, y en un caso real hay que sumar el tiempo de detectar el problema. `/health` volvió a `{"status":"ok"}` sin commit: prueba visible de que volvió. La métrica DORA que ejercito es el tiempo de recuperación (MTTR).
+
+**Lo que el rollback NO deshace: los datos.** Si un deploy borra una columna o filas, volver el código no las recupera: haría falta un backup o el point-in-time restore de Neon.
+
+## Si Render desaparece mañana, qué sobrevive
+
+- **Sobrevive sin cambios:** build + tests + coverage + umbral, la publicación de imágenes en ghcr.io, la plantilla de nginx por variables, las bases de Neon, los environments `qa`/`production` con sus secrets y el required reviewer, la cadena `needs`/`if` y el smoke (sólo cambian las URLs).
+- **Migra:** los dos `curl` a los deploy hooks de `deploy-qa` y `deploy-prod` (se reemplazan por el mecanismo del nuevo proveedor, idealmente desplegando la imagen `sha-` de ghcr.io, que es el TP7), las URLs del smoke y la carga de variables en el nuevo proveedor.
+- **Por qué casi todo sobrevive:** el deploy lo dispara el pipeline y la configuración vive en variables. Render sólo ejecuta.
+
+## Mi stack y mi nube
+
+| Lo que hay que lograr | Cómo lo hice |
+|---|---|
+| Publicar la imagen | `docker/build-push-action` a ghcr.io |
+| Sólo main publica | `push:` atado a push + main |
+| Etiquetar con el commit | `sha-${{ github.sha }}` |
+| Entorno con su configuración | Environments `qa` / `production` de GitHub |
+| Deploy disparado por el pipeline | Deploy hooks de Render |
+| Desplegar el commit verificado | `&ref=$GITHUB_SHA` |
+| Gate humano | Required reviewers |
+| Secrets con alcance | Environment secrets |
+| Una base por entorno | `app_qa` / `app_prod` en Neon |
+| Esquema | `ensureSchema()` + `seed()` al arrancar |
+| Smoke | `curl` en loop con reintentos |
+| Release | GitHub Releases |
+| Conexión a la base | `DATABASE_URL` en formato URI de Postgres con `?sslmode=require` (sin `channel_binding`) |
+| Endpoint de vida | `/health` (ahora con commit) |
+| Endpoint que toca la base | `/api/games` |
+| Front servido | nginx con `dist/` de Vite |
+| Dirección del backend | Plantilla con `BACKEND_URL` |
+
+## Problemas encontrados y cómo los resolví
+
+- **Typo `DNS_RESVOLER` en la variable de `gamerate-front-qa`:** nginx usó el default `127.0.0.11` y el front daba 502 con Render diciendo Live. Lo detectó el smoke (corrida #62, intento 1) y lo diagnostiqué con el log de nginx. Lección: un typo en el nombre de una variable no tira error, cae al default en silencio.
+- **La cadena de conexión de Neon traía `&channel_binding=require`:** la saqué. El driver `pg` usa la URI con `?sslmode=require`.
+- **Se expusieron los deploy hooks de PROD en una captura:** los regeneré en Render y actualicé los environment secrets de `production`. El deploy de este mismo PR a PROD prueba que los hooks nuevos funcionan.
+- **El PR #38 quedó desactualizado tras mergear el #39** (el repo exige ramas al día): Update branch y nueva corrida de checks.
+- **Corrí sin querer el ejemplo del SQL Editor de Neon** (tabla `playing_with_neon` en `app_qa`): la borré.
+
+## Declaración de uso de IA
+
+Usé Claude (chat) como guía paso a paso y para revisar cada PR antes de mergear, y Claude Code para escribir los cambios del `ci.yml`, la plantilla de nginx, el `/health` con commit y esta sección.
+
+Lo verifiqué así:
+- Los PRs con `deploy-qa`/`deploy-prod` salteados y las corridas de `main`.
+- `docker pull` sin credenciales.
+- "SOY PROD" sólo en PROD.
+- El Service ID de los hooks contra los servicios.
+- `/health` mostrando el commit.
+- El rollback cronometrado en Render.
+
+Leí el `ci.yml` completo y puedo explicar qué pasa entre el merge y PROD: cada compuerta, cada secret y cada espera.
