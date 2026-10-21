@@ -38,7 +38,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 // ---------------------------------------------------------------------------
 // Montaje de las rutas. Todo cuelga de /api porque el nginx del frontend
-// reenvía exactamente ese prefijo hacia acá (ver frontend/nginx.conf).
+// reenvía exactamente ese prefijo hacia acá (ver frontend/default.conf.template).
 // ---------------------------------------------------------------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/games", gamesRoutes);

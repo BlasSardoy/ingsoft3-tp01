@@ -29,11 +29,17 @@ ENTRYPOINT ["npm", "run", "test:ci"]
 # ---- Etapa 3: nginx sirve los estáticos ------------------------------------
 FROM nginx:alpine
 
-# La configuración que hace el proxy de /api hacia el backend.
+# La plantilla de configuración que hace el proxy de /api hacia el backend.
 # Es el archivo que más se olvida: sin él la app "levanta" pero no carga datos.
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx la procesa al arrancar (envsubst) y genera /etc/nginx/conf.d/default.conf.
+COPY default.conf.template /etc/nginx/templates/default.conf.template
 
 # Lo único que cruza de la etapa 1: los archivos compilados.
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Valores por defecto = los de compose, así docker compose up anda sin cambios.
+# En Render se pisan con la URL de la api del entorno y un DNS público.
+ENV BACKEND_URL=http://backend:8080 \
+    DNS_RESOLVER=127.0.0.11
 
 EXPOSE 80
