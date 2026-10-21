@@ -73,7 +73,7 @@ export default function Catalog() {
       <section className="hero">
         <h1>Encontrá tu próximo juego</h1>
         <p className="muted">
-          Calificá la jugabilidad, dejá tu comentario y mirá qué opina el resto.
+          Puntuá cada juego del 1 al 5, dejá tu reseña y descubrí qué opina la comunidad.
         </p>
       </section>
 
