@@ -32,9 +32,16 @@ app.use(express.json()); // parsea los body en JSON de los POST/PUT
 // GET /health — endpoint de salud.
 //
 // Sirve para saber si la API ya está levantada sin tener que abrir el
-// navegador:  curl localhost:8080/health  →  {"status":"ok"}
+// navegador:  curl localhost:8080/health  →  {"status":"ok","commit":"local"}
+//
+// "commit" dice QUÉ versión está corriendo: Render define RENDER_GIT_COMMIT
+// en cada deploy con el sha completo del commit desplegado, así se puede
+// comprobar que QA o PROD tienen el commit que se aprobó. En local/compose
+// esa variable no existe y queda "local".
 // ---------------------------------------------------------------------------
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) =>
+  res.json({ status: "ok", commit: process.env.RENDER_GIT_COMMIT || "local" })
+);
 
 // ---------------------------------------------------------------------------
 // Montaje de las rutas. Todo cuelga de /api porque el nginx del frontend
