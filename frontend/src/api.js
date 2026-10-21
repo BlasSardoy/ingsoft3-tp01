@@ -17,7 +17,7 @@
 // Con ruta relativa, el pedido va al mismo origen desde el que se sirvió la
 // página, y quien lo reenvía al backend es:
 //   - en desarrollo: el servidor de Vite (ver vite.config.js)
-//   - en producción: nginx dentro del contenedor (ver nginx.conf)
+//   - en producción: nginx dentro del contenedor (ver default.conf.template)
 //
 // Ventaja extra: como todo sale del mismo origen, NO hace falta configurar
 // CORS. Y la misma imagen del frontend sirve en cualquier entorno, porque no

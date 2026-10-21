@@ -1,48 +1,56 @@
 # =============================================================================
-# CONFIGURACIÓN DE NGINX — el archivo que hace que la app funcione de verdad
+# CONFIGURACIÓN DE NGINX (plantilla) — el archivo que hace que la app funcione
 # =============================================================================
 # Nginx cumple DOS papeles acá:
 #   1. Servir los archivos estáticos de la SPA compilada.
 #   2. Reenviar (proxy) todo lo que empiece con /api hacia el backend.
 #
 # El punto 2 es el que resuelve el "caso trampa de la SPA": el JavaScript corre
-# en el navegador, que está FUERA de la red de compose y no puede resolver el
-# nombre "backend". Nginx sí puede, porque él SÍ corre dentro de un contenedor.
+# en el navegador, que no puede resolver el nombre interno del backend. Nginx
+# sí puede, porque él corre del lado del servidor.
+#
+# Es una PLANTILLA: la imagen oficial de nginx, al arrancar, toma los archivos
+# de /etc/nginx/templates/, reemplaza las variables de entorno definidas y deja
+# el resultado en /etc/nginx/conf.d/default.conf. Las variables propias de
+# nginx ($uri, $remote_addr, ...) no se tocan porque no son variables de entorno.
 # =============================================================================
 
 server {
     listen 80;
     server_name _;
-
     root /usr/share/nginx/html;
     index index.html;
 
-    # -------------------------------------------------------------------------
-    # El DNS interno de Docker. Se declara explícitamente porque abajo usamos
-    # una variable en proxy_pass.
+    # La dirección del backend y el DNS llegan por variables de entorno:
+    # en compose, el nombre del servicio y el DNS de Docker; en Render, la URL
+    # de la api de ESTE entorno y un DNS público.
     #
-    # ⚠️ Un solo resolver, y el de Docker. Si se agrega un DNS público "por las
-    # dudas" (8.8.8.8), nginx reparte las consultas entre los dos y el público
-    # no sabe qué es "backend": aparecen 502 intermitentes con todo sano.
-    # -------------------------------------------------------------------------
-    resolver 127.0.0.11 valid=10s ipv6=off;
-    set $backend_api http://backend:8080;
+    # ⚠️ Un solo resolver. En compose tiene que ser el de Docker: si se agrega
+    # un DNS público "por las dudas", nginx reparte las consultas entre los dos
+    # y el público no sabe qué es "backend": aparecen 502 intermitentes.
+    resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+    set $backend_api ${BACKEND_URL};
 
     # -------------------------------------------------------------------------
     # Proxy de la API.
     #
-    # ⚠️ El nombre va en una VARIABLE ($backend_api) y no escrito directo. Con
-    # el nombre literal, nginx lo resuelve AL ARRANCAR y, si el backend todavía
-    # no existe, se niega a levantar: "host not found in upstream". Con
+    # ⚠️ La dirección va en una VARIABLE ($backend_api) y no escrita directo.
+    # Con el nombre literal, nginx lo resuelve AL ARRANCAR y, si el backend
+    # todavía no existe, se niega a levantar: "host not found in upstream". Con
     # variable, resuelve recién cuando llega un pedido.
     #
     # ⚠️ proxy_pass SIN barra al final: así /api/games llega al backend como
     # /api/games. Con barra, nginx reescribiría el prefijo y la API devolvería
     # 404 en todas las llamadas.
+    #
+    # ⚠️ NO se reenvía el Host del front (proxy_set_header Host $host): Render
+    # enruta por Host, y con el del front no sabría a qué servicio mandar el
+    # pedido. Sin esa línea, nginx manda el host de la api. proxy_ssl_server_name
+    # hace lo mismo para el SNI cuando la api es https.
     # -------------------------------------------------------------------------
     location /api/ {
         proxy_pass $backend_api;
-        proxy_set_header Host $host;
+        proxy_ssl_server_name on;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }

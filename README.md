@@ -188,7 +188,7 @@ frontend/
     styles.css
   vite.config.js        dev server + proxy /api + coverage de frontend
   Dockerfile            multi-stage: build con Vite → nginx sirve los estáticos
-  nginx.conf            proxea /api hacia el servicio "backend"
+  default.conf.template plantilla de nginx: proxea /api hacia BACKEND_URL
   .dockerignore
 
 docker-compose.yml            construye y levanta el sistema completo
