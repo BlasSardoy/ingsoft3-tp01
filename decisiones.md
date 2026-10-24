@@ -1,3 +1,17 @@
+## Enlaces del TP7
+
+- Paquetes públicos con sus etiquetas `sha-<commit>` (sin `latest`):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Corrida con integración VERDE y e2e ROJA (frenó la promoción):
+  - Commit que rompió la app: https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
+  - Corrida: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
+  - Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
+  - Reporte e2e (rojo, con screenshot y traza): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
+- Corrida completa en verde posterior, hasta PROD (fix `967bb5c`): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
 ## Enlaces del TP6
 
 - Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
@@ -436,3 +450,128 @@ Lo verifiqué así:
 - El rollback cronometrado en Render.
 
 Leí el `ci.yml` completo y puedo explicar qué pasa entre el merge y PROD: cada compuerta, cada secret y cada espera.
+
+# Decisiones TP7
+--------------------------------------------
+
+## Build once, deploy many: qué problema del TP6 resuelve
+
+En el TP6 Render reconstruía mi app desde el repo en cada deploy: QA y PROD corrían dos construcciones distintas del mismo commit. `node:22-alpine` y `nginx:alpine` son tags que se mueven: un build de PROD horas después del de QA podía salir con otra imagen base, y lo que probé en QA no era bit a bit lo que llegaba a PROD.
+
+Ahora la imagen se construye UNA vez en `build-backend`/`build-frontend` (último paso, después de los tests) y se publica como `sha-<commit>`. Los 4 servicios de Render son "Existing Image": la bajan y la ejecutan. Prueba: en la corrida verde, `deploy-qa` y `deploy-prod` mandan el MISMO `imgURL` (`…:sha-967bb5cc41d603fc00b8370d5531d4215feb5c57`). https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
+
+Cambié la FUENTE de los 4 servicios, no creé servicios nuevos: conservan URL, variables, deploy hooks e historial.
+
+## Estrategia de etiquetas
+
+- **En el registry:** `sha-<commit>` (los 40 caracteres): dice de qué commit salió la imagen. **En git:** `v7.0.0`, el nombre de la versión que está en PROD.
+- **`sha-<commit>` es un tag:** se puede volver a publicar con otro contenido (por ejemplo, re-corriendo la corrida de ese commit). Por eso no re-corro corridas viejas para desplegar. Lo que no se mueve es el digest `sha256`. Lo vi en Render: el front de `sha-6534b41…` y el de `sha-608cd54…` tienen el mismo digest (`cb99344…`), porque entre esos commits el front no cambió. Dos etiquetas, el mismo contenido.
+- **No publico `latest`:** `latest` no dice qué contenido hay detrás. Un deploy que lo nombre ejecuta "lo último que se publicó", haya pasado las e2e o no.
+- **La imagen de Settings no es la que corre:** los 4 servicios están configurados en Render con `sha-6534b4159e6e9c5f1ca68300d7eb642f5a9c6b04`, el último merge cuando cambié la fuente. Cada deploy de mi pipeline manda su `imgURL`, y Render sólo exige que coincidan registry y nombre; el tag puede ser otro. Por eso no uso Manual Deploy: desplegaría la de Settings, la vieja, y llevaría PROD para atrás sin avisar.
+
+## De la release a la imagen, en un paso
+
+`git rev-list -n1 v7.0.0` → el commit → `ghcr.io/blassardoy/ingsoft3-tp01-backend:sha-<ese commit>` y `…-frontend:sha-<ese commit>`. Volver a esa versión = mandar esa imagen al hook con `imgURL`.
+
+## Cómo compruebo desde afuera que un entorno ejecuta mi imagen
+
+- **Events de cada servicio de Render:** "Triggered via Deploy Hook" + la etiqueta `sha-<commit>` de esa corrida. Lo muestro en vivo, porque Events no es público. Además, en el log de la corrida está el `imgURL` de cada deploy.
+- **Qué NO prueba el smoke:** sólo pregunta si responde. Si el deploy falla, Render sigue sirviendo la versión anterior y el smoke da verde igual.
+- **Hallazgo propio:** mi `/health` devolvía el commit con `RENDER_GIT_COMMIT`, pero esa variable sólo existe cuando Render construye desde git. Con imagen, `/health` ahora dice `"commit":"local"`. Cerrarlo sería hornear el commit en la imagen (un `ARG` en el Dockerfile que el pipeline pase con `build-args`) y que el smoke lo compare con `github.sha`. Es el concepto de §2.4; no lo implementé.
+
+## Qué pruebo en cada suite y por qué
+
+**Integración** (`frontend/e2e/api.spec.js`, fixture `request`, sin navegador, sin dobles, contra https://gamerate-api-qa.onrender.com):
+- **(a)** Login admin → `POST /api/games` → `GET` lo encuentra → `DELETE` → `GET` ya no está.
+- **(b)** `POST` con título vacío → 400 "obligatorios", y la cantidad de juegos no cambia.
+- **(c) La elegí yo: REGLA 4.** Reseñar dos veces el mismo juego deja UNA reseña, con el último puntaje. Esa regla vive en el `UNIQUE(game_id, user_id)` + `ON CONFLICT` de Postgres: en el TP5 la dejé afuera porque ningún unitario con un `db` falso la ve. Si se rompe, un usuario tiene reseñas duplicadas y el promedio queda mal: me escribe cualquiera que reseñe.
+
+**e2e** (`frontend/e2e/juegos.spec.js`, Chromium real contra https://gamerate-front-qa.onrender.com):
+- **(1) Creación:** el admin agrega un juego, lo ve, lo borra (acepta el `confirm`) y ya no está.
+- **(2) Error:** registrarse con el usuario "admin" (ya existe) muestra "ya existe", y después ingresar con ese email da "Credenciales inválidas": la cuenta no se creó.
+- **(3) La elegí yo: la búsqueda por título.** Es lo que el usuario hace todos los días; toca la base y no crea nada. Si no anda, nadie encuentra un juego.
+
+**Qué NO puse:** las reglas finas (rating 1–5, contraseña ≥ 6, bordes) quedan en los unitarios del TP5, que corren en milisegundos. Las reseñas desde el navegador no van en e2e: la regla ya la cubre la integración, y cada e2e cuesta un minuto. Pirámide: muchos abajo, pocos arriba.
+
+**Datos:** todas las que crean datos usan un título con `Date.now()` y borran lo que crean, comprobándolo (en la REGLA 4, en un `finally`).
+
+**Límite:** el flujo 3 depende de que "Celeste" (del seed) exista en QA. Es un dato que el test no fabrica.
+
+**Accesibilidad:** para que las pruebas encuentren los controles como una persona, agregué `role="alert"` en los errores, `aria-label="Borrar <título>"` en cada botón Borrar y `aria-label="Acceso"` en el formulario (el encabezado también tiene un "Ingresar").
+
+## Integración vs e2e: el par que diagnosticó mi rotura
+
+**Rompí el FRONT, no el test:** en el commit `d37862d` cambié el texto del botón "Agregar juego" por "Guardar juego", sin tocar `e2e/`. Unit tests: verdes. https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
+
+**Corrida 40134059692:** smoke VERDE (el sistema respondía) → integración VERDE (13 s) → e2e ROJA (2 min 27 s: esperó el botón 60 s y reintentó) → `deploy-prod` no arrancó ni pidió aprobación. PROD siguió con `e497c4c`. https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
+
+**Lectura (fila 1 de la tabla de §2.5):** la api y la base están sanas: la integración creó, listó y borró con la base de verdad. El que no usa bien la app es el front. En el reporte e2e sólo falló el flujo de alta; los otros dos, verdes. La traza muestra que el test buscaba el botón "Agregar juego", la captura muestra "Guardar juego", y en Network no hay ningún `POST /api/games`: el alta ni se intentó. Diagnóstico sin abrir el código.
+- Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
+- Reporte e2e (rojo): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
+
+**Si hubiera roto la api:** la integración quedaba roja y la e2e no corría, porque su `needs` no se cumple. Fila 2.
+
+**Arreglo:** PR #49 (`967bb5c`), corrida completa en verde, aprobación, PROD con la misma imagen. https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
+
+**Qué NO ataja mi gate:** lo que no recorren mis 3 flujos y mis 3 pruebas (por ejemplo, reseñas desde el navegador o permisos de un usuario común), lo que sólo pasa con datos o tráfico de PROD, y un problema de PROD que no tenga QA (variables o base distintas).
+
+## Por qué la integración amplia y no la estrecha
+
+**Amplia:** contra la api de QA ya desplegada, ejecutando la imagen exacta de esta corrida, con su Postgres de Neon.
+- **Gana:** prueba además que el deploy quedó bien, con el mismo driver y la misma base que PROD, y no tengo que levantar un Postgres en el job.
+- **Pierde:** llega más tarde (necesita build + deploy), depende de que Render esté arriba, y QA es compartido: si una prueba no limpia, ensucia la siguiente corrida.
+
+**La estrecha** (la api armada dentro del job contra un Postgres como `services:`) daría feedback antes y aislado, con bastante más configuración.
+
+## Cold start, timeouts y flaky
+
+QA duerme a los 15 min. El smoke de `deploy-qa` lo despierta antes de las suites. Además, `playwright.config.js` tiene timeout de 60 s por test, 15 s por aserción y 1 retry. Nada de `sleep`: Playwright espera solo a que aparezca lo que busca.
+
+**Flaky:** un test que a veces pasa y a veces falla. Es peor que no tener test, porque entrena a ignorar el rojo. Con `retries: 1`, uno que pasa recién al reintentar sale "flaky" en el reporte con la corrida en verde: por eso miro el reporte aunque esté verde.
+
+## La misma imagen del front en QA y PROD
+
+La dirección del backend no está en la imagen: nginx la lee del entorno con la plantilla del TP6 (`BACKEND_URL` y `DNS_RESOLVER`). Adentro de la imagen están el build de Vite, la plantilla y nginx. Por eso la misma `…-frontend:sha-<commit>` corre en QA y en PROD, y cada una habla con su api.
+
+## Límite conocido: QA compartido
+
+- **El problema:** con dos merges seguidos, la corrida B puede redesplegar QA mientras la integración o la e2e de A lo usan. A da un rojo que no es de su código, o un verde que en parte probó la imagen de B.
+- **Cómo lo reconozco:** en Events de QA, qué imagen corre y a qué hora; en Actions, si el `deploy-qa` de B fue durante la e2e de A.
+- **Qué hago:** rechazo la corrida A con motivo (`concurrency` no ordena la cola de aprobaciones) y vale la B, que trae los dos cambios. Regla: un merge por vez mientras la cadena corre. Un equipo real usaría un entorno por corrida.
+
+## Credenciales de las pruebas
+
+Las suites entran como admin de QA con `QA_ADMIN_EMAIL` y `QA_ADMIN_PASSWORD`. Son secrets de REPOSITORIO porque los jobs `integracion` y `e2e` no están dentro de un environment. Son sólo de QA: las de PROD no las ve ningún job de prueba.
+
+## Mi stack
+
+| Lo que hay que lograr | Cómo lo hice |
+|---|---|
+| Publicar la imagen etiquetada con el commit | `docker/build-push-action`, tags `sha-${{ github.sha }}` (desde el TP6) |
+| Que el entorno ejecute esa imagen | Render "Existing Image" + `imgURL` en el deploy hook |
+| Pedirle a la api de verdad, sin navegador | Fixture `request` de Playwright (`api.spec.js`) |
+| Navegador de verdad | Playwright + Chromium (`juegos.spec.js`) |
+| Apuntar a un entorno u otro | `API_BASE_URL` (api) y `E2E_BASE_URL` (front), variables, no en el código |
+| Buscar como una persona | `getByRole` / `getByLabel`, sin selectores CSS |
+| Reportes | HTML de Playwright como artefactos `playwright-report-integracion` y `playwright-report-e2e` |
+
+## Problemas encontrados y cómo los resolví
+
+- **`/health` pasó a decir "local" al ejecutar la imagen:** `RENDER_GIT_COMMIT` sólo existe si Render construye desde git. Lo documenté como el hueco de §2.4.
+- **vitest toma cualquier `*.spec.js`:** excluí `e2e/**` en `vite.config.js` para que no corra los specs de Playwright.
+- **El borrado usa `confirm()`:** Playwright descarta los diálogos por defecto; el test lo acepta con `page.once("dialog")`.
+- **Dos botones "Ingresar"** (encabezado y formulario): le di `aria-label="Acceso"` al formulario.
+- **Cambié de PC y no estaba el `.env` del compose:** lo recreé desde `.env.example` (no se versiona).
+- **Cold start:** el smoke de PROD falló un intento por timeout y pasó en el reintento. Es el contrato del free tier.
+
+## Declaración de uso de IA
+
+Usé Claude (chat) como guía y para revisar cada PR antes de mergear, y Claude Code para escribir el cambio de `imgURL`, las dos suites, los dos jobs, la accesibilidad del front, la rotura y su arreglo, y esta sección.
+
+Lo verifiqué así:
+- Corrí las 6 pruebas contra mi compose.
+- Vi en Events de los 4 servicios "Triggered via Deploy Hook" con el `sha-` de cada corrida.
+- Leí el log con el mismo `imgURL` en QA y PROD.
+- Abrí el reporte rojo, la captura y la traza.
+
+Puedo explicar qué verifica cada test, contra qué entorno corre y qué pasa si falla.
