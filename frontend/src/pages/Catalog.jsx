@@ -237,7 +237,7 @@ function AdminPanel({ token, onCambio }) {
 
         <div className="admin-form__actions">
           <button className="btn btn--primary" type="submit" disabled={!puedeGuardar}>
-            {guardando ? "Guardando…" : "Agregar juego"}
+            {guardando ? "Guardando…" : "Guardar juego"}
           </button>
         </div>
       </form>
