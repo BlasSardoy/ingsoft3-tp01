@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { configDefaults } from "vitest/config";
 
 // El front llama a /api/... con ruta RELATIVA (sin host/puerto).
 // En dev, Vite proxea /api al backend que corre en localhost:8080.
@@ -17,6 +18,7 @@ export default defineConfig({
   },
   test: {
     environment: "node", // sin DOM: los 4 tests pedidos no lo necesitan
+    exclude: [...configDefaults.exclude, "e2e/**"], // vitest NO toca los specs de Playwright
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov", "json-summary"],

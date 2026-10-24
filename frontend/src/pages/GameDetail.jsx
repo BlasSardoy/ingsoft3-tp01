@@ -83,7 +83,7 @@ export default function GameDetail() {
   }
 
   if (cargando) return <p className="muted page">Cargando…</p>;
-  if (error) return <div className="alert alert--error page">{error}</div>;
+  if (error) return <div className="alert alert--error page" role="alert">{error}</div>;
   if (!game) return null;
 
   // Separamos mi reseña de las demás para poder destacarla arriba.
@@ -116,7 +116,7 @@ export default function GameDetail() {
         <section className="card review-form">
           <h2>{misResenas.length ? "Editar tu reseña" : "Tu reseña"}</h2>
 
-          {errorForm && <div className="alert alert--error">{errorForm}</div>}
+          {errorForm && <div className="alert alert--error" role="alert">{errorForm}</div>}
 
           <form onSubmit={enviarResena}>
             <StarRating

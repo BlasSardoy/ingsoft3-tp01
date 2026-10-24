@@ -113,7 +113,7 @@ export default function Catalog() {
           --------------------------------------------------------------- */}
       {esAdmin && <AdminPanel token={token} onCambio={() => buscar({})} />}
 
-      {error && <div className="alert alert--error">{error}</div>}
+      {error && <div className="alert alert--error" role="alert">{error}</div>}
       {cargando && <p className="muted">Cargando juegos…</p>}
 
       {!cargando && games.length === 0 && (
@@ -143,6 +143,7 @@ export default function Catalog() {
             {esAdmin && (
               <button
                 className="btn btn--danger btn--small"
+                aria-label={`Borrar ${g.title}`}
                 onClick={async () => {
                   if (!confirm(`¿Borrar "${g.title}" y todas sus reseñas?`)) return;
                   await api.deleteGame(g.id, token);
@@ -202,7 +203,7 @@ function AdminPanel({ token, onCambio }) {
       <h2>Agregar un juego</h2>
       <p className="muted small">Sólo visible para administradores.</p>
 
-      {error && <div className="alert alert--error">{error}</div>}
+      {error && <div className="alert alert--error" role="alert">{error}</div>}
 
       <form onSubmit={handleSubmit}>
         <label>

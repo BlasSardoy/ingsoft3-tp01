@@ -8,3 +8,7 @@
 node_modules/
 dist/
 .git/
+
+# reportes de Playwright: se generan al correr los e2e, no son parte del build
+playwright-report/
+test-results/
