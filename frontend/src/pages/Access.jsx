@@ -64,10 +64,10 @@ export default function Access() {
 
   return (
     <div className="auth-page">
-      <form className="card auth-card" onSubmit={handleSubmit}>
+      <form className="card auth-card" onSubmit={handleSubmit} aria-label="Acceso">
         <h1>{esRegistro ? "Crear cuenta" : "Ingresar"}</h1>
 
-        {error && <div className="alert alert--error">{error}</div>}
+        {error && <div className="alert alert--error" role="alert">{error}</div>}
 
         {/* El nombre de usuario sólo hace falta al registrarse */}
         {esRegistro && (
