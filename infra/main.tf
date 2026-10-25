@@ -63,3 +63,69 @@ resource "neon_database" "preprod" {
   name       = "app_preprod"
   owner_name = neon_role.preprod.name
 }
+
+# -----------------------------------------------------------------------------
+# Secretos de preprod: los genera Terraform, nadie los copia.
+# -----------------------------------------------------------------------------
+resource "random_password" "jwt" { # JWT_SECRET de preprod
+  length  = 48
+  special = false
+}
+
+resource "random_password" "admin" { # ADMIN_PASSWORD de preprod
+  length  = 24
+  special = false
+}
+
+locals {
+  # La URL de la base se ARMA con lo que devolvió Neon: nadie la copia y pega
+  # (el error más caro del TP6: un entorno apuntando a la base de otro).
+  # Mi backend es Node: lee DATABASE_URL en formato URI (no ConnectionStrings__Default).
+  database_url = "postgresql://${neon_role.preprod.name}:${urlencode(neon_role.preprod.password)}@${neon_project.preprod.database_host}/${neon_database.preprod.name}?sslmode=require"
+}
+
+# -----------------------------------------------------------------------------
+# Servicios de Render. En el plan free se CREAN y se DESTRUYEN, nunca se
+# modifican: cualquier cambio pasa por recrearlos (ver image_tag).
+# -----------------------------------------------------------------------------
+resource "render_web_service" "api" {
+  name              = "gamerate-api-preprod"
+  plan              = "free"
+  region            = var.region
+  health_check_path = "/health"
+
+  # La etiqueta va en su campo, NO pegada a image_url.
+  runtime_source = {
+    image = {
+      image_url = var.image_repo_api
+      tag       = var.image_tag
+    }
+  }
+
+  # PORT no se declara: lo pone Render.
+  env_vars = {
+    DATABASE_URL   = { value = local.database_url }
+    JWT_SECRET     = { value = random_password.jwt.result }
+    ADMIN_EMAIL    = { value = "admin@gamerate.local" }
+    ADMIN_PASSWORD = { value = random_password.admin.result }
+  }
+}
+
+resource "render_web_service" "front" {
+  name   = "gamerate-front-preprod"
+  plan   = "free"
+  region = var.region
+
+  runtime_source = {
+    image = {
+      image_url = var.image_repo_front
+      tag       = var.image_tag
+    }
+  }
+
+  env_vars = {
+    # Sale de Terraform, no de un copy-paste; sin barra final.
+    BACKEND_URL  = { value = trimsuffix(render_web_service.api.url, "/") }
+    DNS_RESOLVER = { value = "8.8.8.8" }
+  }
+}

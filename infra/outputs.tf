@@ -8,3 +8,17 @@ output "db_host" {
 output "database" {
   value = neon_database.preprod.name
 }
+
+output "api_url" {
+  value = render_web_service.api.url
+}
+
+output "front_url" {
+  value = render_web_service.front.url
+}
+
+# Por si quiero entrar como admin a preprod: terraform output -raw admin_password
+output "admin_password" {
+  value     = random_password.admin.result
+  sensitive = true
+}
