@@ -575,3 +575,30 @@ Lo verifiqué así:
 - Abrí el reporte rojo, la captura y la traza.
 
 Puedo explicar qué verifica cada test, contra qué entorno corre y qué pasa si falla.
+
+# Decisiones TP8
+--------------------------------------------
+
+## Riel y versiones
+
+- **Riel canónico:** Terraform (1.16.6 en mi máquina) + Neon + Render. Declaré un entorno NUEVO, preprod: el proyecto de Neon `gamerate-preprod` con su base `app_preprod`, y `gamerate-api-preprod` + `gamerate-front-preprod` en Render con la imagen `sha-fd0875a5eb9d63a8cc133397a16a6f79b4908e6b` del TP7. QA y PROD no se tocaron: siguen clickeados.
+- **Providers fijados:** `kislerdm/neon` 0.18.0, `render-oss/render` 1.9.1, `hashicorp/random` 3.7.2. El `.terraform.lock.hcl` está commiteado.
+- **Estado:** vive en `infra/terraform.tfstate`, en mi máquina. Está en el `.gitignore` y nunca se commitea: tiene la contraseña del rol en texto plano (lo vi).
+- **Ninguna credencial en el HCL:** `NEON_API_KEY`, `RENDER_API_KEY` y `RENDER_OWNER_ID` los leen los providers del entorno.
+- **Nada se copia y pega:** mi backend es Node, así que la api recibe `DATABASE_URL` en formato URI, ARMADA en el HCL con el host, el rol y la contraseña que devuelve Neon (con `urlencode`). `JWT_SECRET` y `ADMIN_PASSWORD` los genera `random_password`. La `BACKEND_URL` del front sale de `render_web_service.api.url` (con `trimsuffix` de la barra).
+
+## Problemas y cómo los resolví
+
+- **Neon devolvió "org_id is required":** las cuentas nuevas crean proyectos dentro de una organización. Agregué `org_id` al `neon_project`; lo saqué de Organization settings y no es secreto. La guía no lo menciona porque se midió con otra cuenta.
+- **Terraform no estaba en el PATH** de la terminal después de instalarlo con winget: había que reabrir VS Code.
+- **Al recrear preprod** (destroy → apply), Render devolvió las MISMAS URLs (sin sufijo), y Neon creó un host nuevo (otro proyecto). La URL igual la leo siempre del output.
+- **Medido:**
+  - Drift: borré `app_preprod` a mano → el plan dio "1 to add" → el apply la repuso.
+  - Una `base_intrusa` creada a mano no aparece en el plan ("No changes"): Terraform sólo vigila lo que declaré.
+  - Idempotencia: el segundo plan dio "No changes".
+  - `prevent_destroy` hizo que el destroy se negara, nombrando `neon_database.preprod`.
+- **Regla operativa:** destruyo preprod al terminar cada sesión. Las 750 h de Render son del workspace y ahora son 6 servicios: si me paso, se suspende también PROD.
+
+## Uso de IA
+
+Usé Claude (chat) como guía y Claude Code para escribir los `.tf`. Los `terraform init`/`plan`/`apply`/`destroy` los corrí yo, leyendo cada plan. Puedo explicar qué crea cada acción, qué es `(known after apply)`, de dónde sale la cadena de conexión y la `BACKEND_URL`, y por qué el destroy va en orden inverso al grafo.
