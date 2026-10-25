@@ -39,6 +39,7 @@ provider "render" {}
 # -----------------------------------------------------------------------------
 resource "neon_project" "preprod" {
   name      = "gamerate-preprod"
+  org_id    = "org-summer-mud-80119838"
   region_id = "aws-us-east-1"
 
   # Sin esto el primer apply falla: el default (86400 s = 24 h) supera el tope
