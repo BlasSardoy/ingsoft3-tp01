@@ -22,3 +22,9 @@ Thumbs.db
 # reportes de Playwright (se generan al correr los e2e)
 playwright-report/
 test-results/
+
+# Terraform: el estado tiene contraseñas en texto plano — JAMÁS se commitea
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
