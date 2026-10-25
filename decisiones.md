@@ -1,27 +1,3 @@
-## Enlaces del TP7
-
-- Paquetes públicos con sus etiquetas `sha-<commit>` (sin `latest`):
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
-- Corrida con integración VERDE y e2e ROJA (frenó la promoción):
-  - Commit que rompió la app: https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
-  - Corrida: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
-  - Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
-  - Reporte e2e (rojo, con screenshot y traza): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
-- Corrida completa en verde posterior, hasta PROD (fix `967bb5c`): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
-- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
-- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
-
-## Enlaces del TP6
-
-- Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
-- Cadena, eslabón 2 (PR con tests en verde, "Entrar al registry" salteado): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
-- Cadena, eslabón 3 (main: "Construir y publicar" es el último paso): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
-- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
-- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
-
 # Decisiones — TP1
 --------------------------------------------
 1. Por qué Git no pudo resolver el conflicto solo — y qué habría tenido que pasar para que nunca apareciera.
@@ -292,6 +268,16 @@ Lo verifiqué así:
 # Decisiones TP6
 --------------------------------------------
 
+## Enlaces del TP6
+
+- Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Cadena, eslabón 2 (PR con tests en verde, "Entrar al registry" salteado): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
+- Cadena, eslabón 3 (main: "Construir y publicar" es el último paso): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
 ## Por qué el artefacto se publica sólo con la verificación en verde
 
 La publicación depende de una cadena de 3 eslabones:
@@ -454,6 +440,20 @@ Leí el `ci.yml` completo y puedo explicar qué pasa entre el merge y PROD: cada
 # Decisiones TP7
 --------------------------------------------
 
+## Enlaces del TP7
+
+- Paquetes públicos con sus etiquetas `sha-<commit>` (sin `latest`):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Corrida con integración VERDE y e2e ROJA (frenó la promoción):
+  - Commit que rompió la app: https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
+  - Corrida: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
+  - Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
+  - Reporte e2e (rojo, con screenshot y traza): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
+- Corrida completa en verde posterior, hasta PROD (fix `967bb5c`): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
 ## Build once, deploy many: qué problema del TP6 resuelve
 
 En el TP6 Render reconstruía mi app desde el repo en cada deploy: QA y PROD corrían dos construcciones distintas del mismo commit. `node:22-alpine` y `nginx:alpine` son tags que se mueven: un build de PROD horas después del de QA podía salir con otra imagen base, y lo que probé en QA no era bit a bit lo que llegaba a PROD.
@@ -587,6 +587,25 @@ Puedo explicar qué verifica cada test, contra qué entorno corre y qué pasa si
 - **Ninguna credencial en el HCL:** `NEON_API_KEY`, `RENDER_API_KEY` y `RENDER_OWNER_ID` los leen los providers del entorno.
 - **Nada se copia y pega:** mi backend es Node, así que la api recibe `DATABASE_URL` en formato URI, ARMADA en el HCL con el host, el rol y la contraseña que devuelve Neon (con `urlencode`). `JWT_SECRET` y `ADMIN_PASSWORD` los genera `random_password`. La `BACKEND_URL` del front sale de `render_web_service.api.url` (con `trimsuffix` de la barra).
 
+## Diseño del entorno preprod
+
+- **Por qué un entorno NUEVO y no llevar a código QA/PROD:** el valor de IaC se ve creando: "necesito un entorno" se responde con un archivo y un `apply`, no con una tarde de clicks. QA y PROD quedaron intactos (mismas URLs, misma cadena del TP7, cero riesgo antes de la defensa) y sirven de contraste: en mi dashboard conviven entornos que existen porque alguien los clickeó y uno que existe porque está escrito. El escrito lo recreo con un comando; los otros, no.
+- **Dónde va en la cadena:** en un equipo, CI → QA → preprod → [aprobación] → PROD. En este TP no lo conecté al pipeline: lo creo y lo pruebo a mano.
+- **La misma imagen del TP7:** preprod corre `sha-fd0875a5eb9d63a8cc133397a16a6f79b4908e6b` (la de `v7.0.0`), la misma que verificaron QA, la integración y la e2e. `image_url` va SIN la etiqueta y la etiqueta en `tag`. `image_tag` es fijo a propósito: en Render free un servicio no se puede modificar (el provider manda "maintenance mode" y el plan free lo rechaza), así que para cambiarlo se recrea: `terraform destroy` + `apply`, o `terraform apply -replace=render_web_service.api`. Un entorno desechable no se actualiza: se vuelve a hacer.
+- **Un proyecto de Neon propio** (`gamerate-preprod`), no una base más en el de QA/PROD: se destruye entero sin rozar `app_qa` ni `app_prod`.
+- **Terraform crea la base, no el esquema:** la base nace vacía y las tablas las crean `ensureSchema()` + `seed()` de mi backend al arrancar (lo vi: `/api/games` trajo los 3 juegos con `created_at` del momento del apply).
+- **El orden lo decide el grafo:** de las referencias entre recursos (`neon_project.preprod.id`, `render_web_service.api.url`…) Terraform arma el grafo de dependencias. En el apply: proyecto → rol → base, los `random_password`, la api, y recién después el front (necesita la URL de la api). El destroy lo recorre al revés: front → api → base/rol → proyecto. El plan del destroy los lista alfabéticos; el orden real se ve en las líneas `Destroying...`.
+- **`(known after apply)`:** ids, el host de Neon y la URL de la api los asigna el proveedor al crear; por eso la `BACKEND_URL` del front aparece así en el plan.
+- **Lo que sigue siendo artesanal en mi cuenta:** QA y PROD (clickeados), sus deploy hooks (el provider de Render no los expone), las API keys de Neon y Render, y el `org_id`/owner id que saqué de las consolas.
+
+## Higiene de secretos y estado
+
+- **Credenciales fuera del código y del disco:** las cargo en cada terminal con `$env:NEON_API_KEY = Read-Host …` (PowerShell), así no quedan en el historial ni en ningún archivo. El `org_id` de Neon y el `RENDER_OWNER_ID` no son secretos.
+- **El estado vive en mi máquina** (`infra/terraform.tfstate`, sin bloque `backend` a propósito). El `.gitignore` cubre `*.tfstate`, `*.tfstate.*`, `.terraform/` y `*.tfvars` desde ANTES del primer apply. Lo abrí y vi la contraseña de `app_preprod_owner` en texto plano: por eso nunca se commitea.
+- **Si pierdo el estado no pierdo la infraestructura: pierdo la prueba de que es mía.** El próximo plan propondría crear todo de nuevo contra recursos que ya existen; habría que traerlos con `import`. Por eso hago la defensa desde esta máquina.
+- **En equipo** el estado iría a un backend remoto con bloqueo (un Postgres, S3, Azure Storage), creado por fuera de este código, para que dos personas o un pipeline no apliquen a la vez.
+- **Outputs:** la cadena de conexión NO sale por output (tiene la contraseña); sólo host, nombre de la base y URLs. `admin_password` sale marcado `sensitive`.
+
 ## Problemas y cómo los resolví
 
 - **Neon devolvió "org_id is required":** las cuentas nuevas crean proyectos dentro de una organización. Agregué `org_id` al `neon_project`; lo saqué de Organization settings y no es secreto. La guía no lo menciona porque se midió con otra cuenta.
@@ -598,6 +617,8 @@ Puedo explicar qué verifica cada test, contra qué entorno corre y qué pasa si
   - Idempotencia: el segundo plan dio "No changes".
   - `prevent_destroy` hizo que el destroy se negara, nombrando `neon_database.preprod`.
 - **Regla operativa:** destruyo preprod al terminar cada sesión. Las 750 h de Render son del workspace y ahora son 6 servicios: si me paso, se suspende también PROD.
+- **Previstos (no me fallaron porque los apliqué desde el principio siguiendo la guía):** `history_retention_seconds = 21600` (sin eso el primer apply falla: el default de 86400 s supera el tope del plan free) y `default_branch_id` en vez de `branch_id` (con el nombre viejo da `Unsupported attribute`).
+- **PowerShell vs Bash:** los comandos de la guía son de Bash (`export`, `read`, `grep`); en la terminal de VS Code (PowerShell) usé `$env:…`, `Read-Host` y `Select-String`.
 
 ## Uso de IA
 
