@@ -623,3 +623,69 @@ Puedo explicar qué verifica cada test, contra qué entorno corre y qué pasa si
 ## Uso de IA
 
 Usé Claude (chat) como guía y Claude Code para escribir los `.tf`. Los `terraform init`/`plan`/`apply`/`destroy` los corrí yo, leyendo cada plan. Puedo explicar qué crea cada acción, qué es `(known after apply)`, de dónde sale la cadena de conexión y la `BACKEND_URL`, y por qué el destroy va en orden inverso al grafo.
+
+# Decisiones TP9
+--------------------------------------------
+
+## Las tres capas de seguridad automatizada (shift-left)
+
+- **Capa 1, secretos:** secret scanning + push protection, verificados activos en Settings → Advanced Security (en un repo público vienen prendidos). Frena el push que trae un secreto con formato conocido antes de que entre al repo. No detecta una contraseña inventada: por eso siguen valiendo las capas anteriores (`.env` gitignoreado en el TP2, secrets en el TP4, environment secrets en el TP6, claves por variable de entorno en Terraform en el TP8).
+- **Capa 2, dependencias (SCA):** Dependabot alerts y Dependabot security updates prendidos en Settings, y `.github/dependabot.yml` ([PR #58](https://github.com/BlasSardoy/ingsoft3-tp01/pull/58)) con npm en `/backend`, npm en `/frontend` y github-actions en `/`, semanal. Insights → Dependency graph → Dependabot muestra los 3.
+- **Capa 3, código propio (SAST):** CodeQL con la configuración por defecto (JavaScript/TypeScript y GitHub Actions). Corre en cada PR y en cada push a main; los resultados están en Security and quality → Code scanning.
+
+**Shift-left:** la seguridad pasa a ser una verificación más del pipeline, igual que los tests. Es el mismo argumento que la integración continua del TP4: cuanto antes se encuentra, más barato.
+
+## Dependabot: el PR que mergeé
+
+- **[PR #53](https://github.com/BlasSardoy/ingsoft3-tp01/pull/53):** `source-map-js` 1.2.1 → 1.2.2 en `/frontend` (patch, dependencia transitiva de desarrollo; sólo cambia `frontend/package-lock.json`). Lo abrió Dependabot security updates y cierra la alerta #21 (High, DoS por source maps indexados). Las alertas abiertas bajaron de 27 a 26.
+- **Por qué me animé:** es patch (SemVer: no rompe la API) y el CI corrió en verde sobre el PR (tests + coverage + build de imágenes). Al mergear, la cadena completa (QA, integración, e2e, aprobación, PROD) lo volvió a verificar: CI #92, commit `5bb2aed`, 5 min 13 s de merge a PROD.
+- **Los que NO mergeé:** #54–#57 y las majors del `dependabot.yml` (vite 5→8, vitest 3→5, react 19, express 5, dotenv 18, bcryptjs 3). Varias quedaron en rojo; otras dieron verde (express 5, dotenv 18, bcryptjs 3), pero el CI de un PR sólo corre tests unitarios y build: las rutas las cubren integración y e2e, que corren después del merge. Un verde en el PR no alcanza para una major. En un proyecto real las agruparía con `groups:` en el `dependabot.yml`.
+- **Las 26 alertas que quedan:** casi todas son de desarrollo (tinypool/vitest, vite) y no viajan a la imagen (`npm ci --omit=dev`; el front se sirve estático con nginx). Las de runtime son `proxy-addr` y `body-parser` (vía Express 4); `proxy-addr` sólo aplica con "trust proxy", que mi app no usa.
+
+## CodeQL: dos hallazgos analizados
+
+- **"Workflow does not contain permissions" ×4** (`deploy-qa`, `integracion`, `e2e`, `deploy-prod`) — OWASP A01 (control de acceso / mínimo privilegio). Fix en el [PR #72](https://github.com/BlasSardoy/ingsoft3-tp01/pull/72): `permissions: contents: read` a nivel workflow; los builds mantienen `packages: write` en su job. Las 4 alertas quedaron "closed as fixed".
+- **"Missing rate limiting" ×6** (`routes/games.js` y `reviews.js`) — OWASP A06 (diseño inseguro) / API4 consumo de recursos. Descartadas como Won't fix, con justificación: DoS posible sin fuga de datos. En un proyecto real va en el borde (proxy/CDN) o con `express-rate-limit` + trust proxy.
+
+## Monitor externo (UptimeRobot)
+
+- **UptimeRobot** (HTTP(s), cada 5 min) sobre https://gamerate-api-prod.onrender.com/health. Express contesta HEAD en las rutas GET, así que el `/health` le responde al plan free sin cambios.
+- **Caída controlada:** Suspend 23:41 → DOWN 23:47 (detección: 6 min) → Resume 23:47 → UP 00:17 (36 min en total). El UP tardó porque Render free deja el servicio dormido después del Resume hasta que llega un pedido real; lo desperté abriendo `/health`. El primer incidente del historial es de cuando creé el monitor con la api todavía suspendida; el medido es el segundo.
+- **Monitor pausado al terminar:** despierto todo el mes consume 720–744 de las 750 h compartidas de Render.
+- **Postmortem** blameless en [`postmortem.md`](postmortem.md).
+
+## Sentry: errores, demoras y uso
+
+- **Integración:** back con `@sentry/node` (DSN por la variable de entorno `SENTRY_DSN`, sólo en PROD; sin DSN queda apagado en local, tests y QA) y front con `@sentry/react` (DSN en el código: sólo permite enviar datos). [PR #72](https://github.com/BlasSardoy/ingsoft3-tp01/pull/72).
+- **Error:** "Falla de prueba del TP9" (NODE-EXPRESS-1, unhandled), desde el endpoint temporal `/api/falla`, retirado en este PR ([#74](https://github.com/BlasSardoy/ingsoft3-tp01/pull/74)).
+- **Más usada:** `GET /api/games` (la pide el front al abrir y el smoke test en cada deploy).
+- **Más lenta:** `POST /api/auth/login`, p50 611 ms / p95 ≈ 764 ms, por bcrypt (10 rondas, lento a propósito contra fuerza bruta); el resto < 100 ms. `GET /api/games` tiene p50 5 ms y p95 95 ms: el p95 es el primer pedido con Neon dormido.
+- **Sentry no muestra `/health`:** descarta por defecto las transacciones de health checks.
+
+## Continuous feedback: del dato a la tarjeta
+
+- **El dato:** en Sentry, `POST /api/auth/login` es la más lenta, con p95 ≈ 764 ms.
+- **La tarjeta:** issue [#73](https://github.com/BlasSardoy/ingsoft3-tp01/issues/73), "Login lento en PROD: p95 764 ms (Sentry, 25/10)", en el tablero "GameRate - DevOps (TP3)", en Todo.
+- **Hipótesis:** bcrypt con 10 rondas + la conexión fría a Neon.
+- **Próximo paso:** separar en una traza cuánto es bcrypt y cuánto la base. Si domina bcrypt, se mantiene (es lento a propósito) y se agrega "Ingresando…" en el botón.
+
+Lo que pasa en producción decide qué se hace en la próxima versión.
+
+## Problemas y cómo los resolví
+
+- **En Windows, `npm run test:ci` falla** porque cmd.exe no expande `${COVERAGE_DIR:-coverage}`: lo corrí con Git Bash. En CI anda porque es Linux.
+- **El instructivo de Sentry está en ESM** (`import`, `node --import`); mi back es CommonJS: `require("./instrument")` como primera línea, antes de express.
+- **`instrument.js` quedó fuera del coverage** para no bajar el umbral (no tiene reglas).
+- **Al prender el `dependabot.yml` aparecieron 12 PRs nuevos a la vez:** cada merge a main los rebasea y dispara su CI y CodeQL.
+- **El comentario de Dismiss de CodeQL** tiene un máximo de 280 caracteres.
+- **Suspendí PROD antes de crear el monitor:** nadie se enteró. Repetí la caída con el monitor en Up.
+
+## Uso de IA
+
+Usé Claude como guía paso a paso y Claude Code para el `dependabot.yml`, la integración de Sentry, el arreglo de `permissions` y este cierre (decisiones y postmortem con mis datos).
+
+Lo verifiqué así:
+- CI verde en cada PR y en la cadena hasta PROD.
+- `/api/falla` devolvió 500 en JSON en PROD y el error llegó a Sentry.
+- Las 4 alertas de `permissions` se cerraron solas.
+- El monitor registró DOWN y UP con las horas de arriba.
