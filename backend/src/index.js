@@ -10,6 +10,10 @@
 // las inyecta compose), pero permite correr el backend suelto en la máquina.
 require("dotenv").config();
 
+// Sentry tiene que cargarse antes que express y pg para poder medirlos
+// (equivale al --import de ESM).
+const Sentry = require("./instrument");
+
 const express = require("express");
 const cors = require("cors");
 
@@ -43,6 +47,11 @@ app.get("/health", (_req, res) =>
   res.json({ status: "ok", commit: process.env.RENDER_GIT_COMMIT || "local" })
 );
 
+// TEMPORAL TP9 §3.5 — falla a propósito para ver un error en Sentry. Se saca antes del v9.0.0
+app.get("/api/falla", () => {
+  throw new Error("Falla de prueba del TP9");
+});
+
 // ---------------------------------------------------------------------------
 // Montaje de las rutas. Todo cuelga de /api porque el nginx del frontend
 // reenvía exactamente ese prefijo hacia acá (ver frontend/default.conf.template).
@@ -51,8 +60,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/games", gamesRoutes);
 app.use("/api", reviewsRoutes); // expone /api/games/:id/reviews y /api/reviews/:id
 
+// Después de todas las rutas: le pasa a Sentry los errores que llegan a Express.
+Sentry.setupExpressErrorHandler(app);
+
 // Cualquier otra ruta: 404 en JSON (y no el HTML por defecto de Express).
 app.use((_req, res) => res.status(404).json({ error: "Ruta no encontrada" }));
+
+// Último manejador: cualquier error no atrapado responde 500 en JSON, sin el
+// stack (que es lo que Express mostraría por defecto y le da pistas a un atacante).
+app.use((err, _req, res, _next) => res.status(500).json({ error: "Error interno" }));
 
 // ---------------------------------------------------------------------------
 // ARRANQUE
