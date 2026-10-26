@@ -630,7 +630,6 @@ Usé Claude (chat) como guía y Claude Code para escribir los `.tf`. Los `terraf
 ## Las tres capas de seguridad automatizada (shift-left)
 
 - **Capa 1, secretos:** secret scanning + push protection, verificados activos en Settings → Advanced Security (en un repo público vienen prendidos). Frena el push que trae un secreto con formato conocido antes de que entre al repo. No detecta una contraseña inventada: por eso siguen valiendo las capas anteriores (`.env` gitignoreado en el TP2, secrets en el TP4, environment secrets en el TP6, claves por variable de entorno en Terraform en el TP8).
-- **Push protection:** verificada activa en Settings → Advanced Security.
 - **Capa 2, dependencias (SCA):** Dependabot alerts y Dependabot security updates prendidos en Settings, y `.github/dependabot.yml` ([PR #58](https://github.com/BlasSardoy/ingsoft3-tp01/pull/58)) con npm en `/backend`, npm en `/frontend` y github-actions en `/`, semanal. Insights → Dependency graph → Dependabot muestra los 3.
 - **Capa 3, código propio (SAST):** CodeQL con la configuración por defecto (JavaScript/TypeScript y GitHub Actions). Corre en cada PR y en cada push a main; los resultados están en Security and quality → Code scanning.
 
