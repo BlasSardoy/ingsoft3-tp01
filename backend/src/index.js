@@ -47,11 +47,6 @@ app.get("/health", (_req, res) =>
   res.json({ status: "ok", commit: process.env.RENDER_GIT_COMMIT || "local" })
 );
 
-// TEMPORAL TP9 §3.5 — falla a propósito para ver un error en Sentry. Se saca antes del v9.0.0
-app.get("/api/falla", () => {
-  throw new Error("Falla de prueba del TP9");
-});
-
 // ---------------------------------------------------------------------------
 // Montaje de las rutas. Todo cuelga de /api porque el nginx del frontend
 // reenvía exactamente ese prefijo hacia acá (ver frontend/default.conf.template).
