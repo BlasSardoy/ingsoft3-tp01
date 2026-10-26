@@ -19,7 +19,7 @@ Front y api de PROD sin servicio durante 36 min. Sin usuarios reales afectados: 
 | 23:47 | Resume del servicio en Render. |
 | 23:47–00:15 | El servicio queda dormido: Render le contesta 503 al monitor mientras no llegue un pedido real. |
 | ~00:15 | Pedido manual a `/health` desde el navegador: el servicio despierta. |
-| 00:17 | UptimeRobot detecta UP y manda el mail. |
+| 00:17 (26/10) | UptimeRobot detecta UP y manda el mail. |
 | Verificación | `/api/games` y `/api/falla` responden; PROD sigue con la imagen del último deploy (Sentry incluido). |
 
 ## Causa raíz (del SISTEMA, no de una persona)
