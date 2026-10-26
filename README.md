@@ -229,6 +229,10 @@ evidencias.md                 capturas y salidas que respaldan cada entrega
 | TP3 | Planificación y trazabilidad: GitHub Projects, jerarquía épica/historia/tarea, sprint, board | `v3.0.0` |
 | TP4 | CI: Pipelines as Code — build en paralelo, cache de capas, gate y badge | `v4.0.0` |
 | TP5 | Calidad automatizada: suite de tests, coverage en el pipeline, umbral que frena un merge | `v5.0.0` |
+| TP6 | CD: QA y PROD en Render con aprobación, rollback | `v6.0.0` |
+| TP7 | Imagen como unidad de deploy + integración y e2e con Playwright como gate | `v7.0.0` |
+| TP8 | IaC: entorno preprod con Terraform | `v8.0.0` |
+| TP9 | DevSecOps + observabilidad: Dependabot, CodeQL, push protection, UptimeRobot, Sentry, postmortem | `v9.0.0` |
 
 Las decisiones técnicas de cada entrega están en [`decisiones.md`](decisiones.md); desde el TP3
 (inclusive) se prueban con URLs del repositorio en vez de capturas — `evidencias.md` sólo cubre
