@@ -13,6 +13,7 @@ export default defineConfig({
         "src/**/*.test.js",
         "src/index.js", // arranque: cablea Express, no tiene reglas
         "src/seed.js", // datos de ejemplo, no tiene reglas
+        "src/instrument.js", // configuración de Sentry, no tiene reglas
         "src/db.js", // esquema SQL, terreno de integración
         "src/routes/**", // pegamento HTTP — su lógica ya vive en reglas.js/servicios/**
       ],

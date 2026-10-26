@@ -6,6 +6,11 @@ on:
   push:
     branches: [main]  # ← sólo para que main tenga su corrida
 
+# mínimo privilegio por defecto (CodeQL: actions/missing-workflow-permissions);
+# build-backend y build-frontend suman packages: write en su propio job
+permissions:
+  contents: read
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest
