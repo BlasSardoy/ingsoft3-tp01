@@ -1,3 +1,27 @@
+## Enlaces del TP7
+
+- Paquetes públicos con sus etiquetas `sha-<commit>` (sin `latest`):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Corrida con integración VERDE y e2e ROJA (frenó la promoción):
+  - Commit que rompió la app: https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
+  - Corrida: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
+  - Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
+  - Reporte e2e (rojo, con screenshot y traza): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
+- Corrida completa en verde posterior, hasta PROD (fix `967bb5c`): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
+## Enlaces del TP6
+
+- Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
+  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
+- Cadena, eslabón 2 (PR con tests en verde, "Entrar al registry" salteado): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
+- Cadena, eslabón 3 (main: "Construir y publicar" es el último paso): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
+- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
+- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+
 # Decisiones — TP1
 --------------------------------------------
 1. Por qué Git no pudo resolver el conflicto solo — y qué habría tenido que pasar para que nunca apareciera.
@@ -268,15 +292,7 @@ Lo verifiqué así:
 # Decisiones TP6
 --------------------------------------------
 
-## Enlaces del TP6
-
-- Paquetes públicos (etiquetados `sha-<commit del merge>`, se bajan sin credenciales):
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
-- Cadena, eslabón 2 (PR con tests en verde, "Entrar al registry" salteado): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39291635394/job/118193481546
-- Cadena, eslabón 3 (main: "Construir y publicar" es el último paso): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39293687910/job/118200598264
-- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
-- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+Los enlaces de este TP están arriba de todo, en «Enlaces del TP6».
 
 ## Por qué el artefacto se publica sólo con la verificación en verde
 
@@ -333,7 +349,7 @@ Saqué `proxy_set_header Host $host` del nginx: con esa línea Render recibía e
 - Tener anotado el SHA del último deploy bueno de PROD (Deployments → production) ANTES de aprobar: es lo que necesito si tengo que volver.
 - Si hay dos corridas esperando, rechazar la vieja a mano. `concurrency` (`group: deploy-prod`, `cancel-in-progress: false`) evita que dos deploys a PROD se pisen, pero NO ordena la cola de aprobaciones: si apruebo la vieja después de la nueva, PROD retrocede.
 
-**Rechazo:** corrida #64 (merge del #41) https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39646268067. Era el primer deploy a PROD con la plantilla de nginx, que en QA había fallado por un typo en `DNS_RESOLVER` (corrida #62, intento 1). Antes de aprobar quise revisar las variables de `gamerate-front-prod` y que los hooks de PROD apuntaran a los servicios `-prod`. Lo revisé: estaban bien.
+**Rechazo:** rechacé el pase a PROD de la corrida #64 (merge del #41) https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39646268067. Motivo escrito en el rechazo: «Primer deploy a PROD con la plantilla nueva de nginx. En QA este mismo cambio dejó el front sin api por un typo en DNS_RESOLVER (corrida #62, intento 1). Antes de llevarlo a PROD quiero revisar a mano las variables de gamerate-front-prod y confirmar que los hooks de PROD apunten a los servicios -prod.». Contexto: era el primer deploy a PROD con la plantilla de nginx, que en QA había fallado por un typo en `DNS_RESOLVER` (corrida #62, intento 1); antes de aprobar quise revisar las variables de `gamerate-front-prod` y que los hooks de PROD apuntaran a los servicios `-prod`. Después revisé las variables y los hooks de PROD: estaban bien, y la siguiente corrida con cambio visible, la #66, la aprobé.
 
 **Aprobación con cambio visible:** corrida #66 (merge del #42, nuevo subtítulo del catálogo "Puntuá cada juego del 1 al 5…") https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/39647027581
 
@@ -440,19 +456,7 @@ Leí el `ci.yml` completo y puedo explicar qué pasa entre el merge y PROD: cada
 # Decisiones TP7
 --------------------------------------------
 
-## Enlaces del TP7
-
-- Paquetes públicos con sus etiquetas `sha-<commit>` (sin `latest`):
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-backend
-  - https://github.com/BlasSardoy/ingsoft3-tp01/pkgs/container/ingsoft3-tp01-frontend
-- Corrida con integración VERDE y e2e ROJA (frenó la promoción):
-  - Commit que rompió la app: https://github.com/BlasSardoy/ingsoft3-tp01/commit/d37862dfce6bb923d50ea6c6ed96bfff7d14bdb0
-  - Corrida: https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692
-  - Reporte de integración (verde): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576780674
-  - Reporte e2e (rojo, con screenshot y traza): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134059692/artifacts/12576795973
-- Corrida completa en verde posterior, hasta PROD (fix `967bb5c`): https://github.com/BlasSardoy/ingsoft3-tp01/actions/runs/40134936011
-- QA: https://gamerate-front-qa.onrender.com · https://gamerate-api-qa.onrender.com
-- PROD: https://gamerate-front-prod.onrender.com · https://gamerate-api-prod.onrender.com
+Los enlaces de este TP están arriba de todo, en «Enlaces del TP7».
 
 ## Build once, deploy many: qué problema del TP6 resuelve
 
